@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>YourCVOnline</title>
   <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com "></script>
+  <script src="https://cdn.tailwindcss.com  "></script>
   <style>
     body {
       font-family: system-ui, sans-serif;
@@ -13,9 +13,7 @@
   </style>
 </head>
 <body class="bg-white text-gray-800 antialiased">
-
   <div class="font-sans bg-white">
-
     <!-- Header -->
     <header class="bg-white shadow-sm sticky top-0 z-50 transition-all duration-300">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -26,7 +24,6 @@
             </svg>
             <span class="text-xl font-bold text-gray-900">YourCVOnline</span>
           </div>
-
           <nav class="hidden md:flex space-x-8">
             <a href="#about" class="text-gray-600 hover:text-indigo-600 relative group">
               About
@@ -49,14 +46,12 @@
               <span class="absolute left-0 bottom-0 w-full h-0.5 bg-indigo-600 scale-x-0 group-hover:scale-x-100 origin-left transition-transform"></span>
             </a>
           </nav>
-
           <a href="#contact" class="hidden md:inline-block px-5 py-2 rounded-md bg-indigo-600 text-white font-medium hover:bg-indigo-700 hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200">
             Get Started
           </a>
         </div>
       </div>
     </header>
-
     <!-- Hero Section -->
     <section class="py-20 bg-gradient-to-br from-indigo-50 to-white">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center">
@@ -77,11 +72,10 @@
           </div>
         </div>
         <div class="md:w-1/2">
-          <img src="https://placehold.co/600x400/indigo/white?text=Personal+CV+Website " alt="CV Website Preview" class="rounded-lg shadow-lg w-full" />
+          <img src="https://placehold.co/600x400/indigo/white?text=Personal+CV+Website  " alt="CV Website Preview" class="rounded-lg shadow-lg w-full" />
         </div>
       </div>
     </section>
-
     <!-- About Section -->
     <section id="about" class="py-20 bg-white">
       <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -109,7 +103,6 @@
         </div>
       </div>
     </section>
-
     <!-- How It Works Section -->
     <section id="how-it-works" class="py-20 bg-gray-50">
       <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -134,7 +127,6 @@
         </div>
       </div>
     </section>
-
     <!-- Example Sites Section -->
     <section id="examples" class="py-20 bg-white">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -143,13 +135,18 @@
           <p class="mt-4 text-lg text-gray-600">Check out some of the websites I've created recently.</p>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div class="bg-gray-50 rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow">
-            <img src="https://placehold.co/800x500/indigo/white?text=CV+Site+1 " alt="CV Site 1" class="w-full h-48 object-cover" />
-            <div class="p-6">
-              <h3 class="text-xl font-semibold text-gray-900">John Doe - Software Developer</h3>
-              <p class="mt-2 text-gray-600">A minimal, modern tech-focused CV site.</p>
+          <!-- John Doe CV Site (Now Clickable) -->
+          <a href="https://thenetwork1ng.github.io/CVJohndoe/ " target="_blank" rel="noopener noreferrer" class="block group">
+            <div class="bg-gray-50 rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300">
+              <img src="https://placehold.co/800x500/indigo/white?text=CV+Site+1 " alt="CV Site 1" class="w-full h-48 object-cover transition-transform duration-300 transform group-hover:scale-105" />
+              <div class="p-6">
+                <h3 class="text-xl font-semibold text-gray-900">John Doe - Software Developer</h3>
+                <p class="mt-2 text-gray-600">A minimal, modern tech-focused CV site.</p>
+              </div>
             </div>
-          </div>
+          </a>
+
+          <!-- Sarah Lee CV Site -->
           <div class="bg-gray-50 rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow">
             <img src="https://placehold.co/800x500/purple/white?text=CV+Site+2 " alt="CV Site 2" class="w-full h-48 object-cover" />
             <div class="p-6">
@@ -160,7 +157,6 @@
         </div>
       </div>
     </section>
-
     <!-- Pricing Section -->
     <section id="pricing" class="py-20 bg-gray-50">
       <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -202,13 +198,11 @@
         </div>
       </div>
     </section>
-
     <!-- Contact Section -->
     <section id="contact" class="py-20 bg-white">
       <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h2 class="text-3xl font-bold text-gray-900">Let’s Work Together</h2>
         <p class="mt-4 text-lg text-gray-600">Get in touch and we can start building your personal CV website today.</p>
-
         <!-- Embedded Tally Form -->
         <div class="mt-10 flex justify-center">
           <iframe 
@@ -226,15 +220,12 @@
         </div>
       </div>
     </section>
-
     <!-- Footer -->
     <footer class="bg-gray-900 text-white py-8">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <p>&copy; {new Date().getFullYear()} YourCVOnline. Handcrafted by You.</p>
       </div>
     </footer>
-
   </div>
-
 </body>
 </html>
