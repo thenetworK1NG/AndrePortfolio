@@ -4,229 +4,168 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>YourCVOnline</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com "></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
-      font-family: system-ui, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .glass {
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .neon-text {
+      text-shadow: 0 0 5px #8b5cf6, 0 0 15px #8b5cf6, 0 0 25px #8b5cf6;
+    }
+
+    .hover-glow:hover {
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.8);
+      transform: scale(1.05);
+    }
+
+    .transition-smooth {
+      transition: all 0.3s ease-in-out;
     }
   </style>
 </head>
-<body class="bg-white text-gray-800 antialiased">
-  <div class="font-sans bg-white">
-    <!-- Header -->
-    <header class="bg-white shadow-sm sticky top-0 z-50 transition-all duration-300">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center py-5">
-          <div class="flex items-center space-x-2">
-            <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M9 12h6m-6 4h6m-6-8h6M3 12a9 9 0 1118 0 9 9 0 01-18 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
-            </svg>
-            <span class="text-xl font-bold text-gray-900">YourCVOnline</span>
-          </div>
-          <nav class="hidden md:flex space-x-8">
-            <a href="#about" class="text-gray-600 hover:text-indigo-600 relative group">
-              About
-              <span class="absolute left-0 bottom-0 w-full h-0.5 bg-indigo-600 scale-x-0 group-hover:scale-x-100 origin-left transition-transform"></span>
-            </a>
-            <a href="#how-it-works" class="text-gray-600 hover:text-indigo-600 relative group">
-              How It Works
-              <span class="absolute left-0 bottom-0 w-full h-0.5 bg-indigo-600 scale-x-0 group-hover:scale-x-100 origin-left transition-transform"></span>
-            </a>
-            <a href="#examples" class="text-gray-600 hover:text-indigo-600 relative group">
-              Examples
-              <span class="absolute left-0 bottom-0 w-full h-0.5 bg-indigo-600 scale-x-0 group-hover:scale-x-100 origin-left transition-transform"></span>
-            </a>
-            <a href="#pricing" class="text-gray-600 hover:text-indigo-600 relative group">
-              Pricing
-              <span class="absolute left-0 bottom-0 w-full h-0.5 bg-indigo-600 scale-x-0 group-hover:scale-x-100 origin-left transition-transform"></span>
-            </a>
-            <a href="#contact" class="text-gray-600 hover:text-indigo-600 relative group">
-              Contact
-              <span class="absolute left-0 bottom-0 w-full h-0.5 bg-indigo-600 scale-x-0 group-hover:scale-x-100 origin-left transition-transform"></span>
-            </a>
-          </nav>
-          <a href="#contact" class="hidden md:inline-block px-5 py-2 rounded-md bg-indigo-600 text-white font-medium hover:bg-indigo-700 hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200">
-            Get Started
-          </a>
+<body class="bg-gradient-to-br from-purple-900 via-black to-black text-white antialiased">
+
+  <!-- Header -->
+  <header class="bg-black/60 sticky top-0 z-50 glass shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 py-5 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <svg class="w-10 h-10 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M9 12h6m-6 4h6m-6-8h6M3 12a9 9 0 1118 0 9 9 0 01-18 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
+        </svg>
+        <span class="text-2xl font-extrabold neon-text">YourCVOnline</span>
+      </div>
+      <nav class="hidden md:flex space-x-6 text-sm font-semibold uppercase tracking-wide">
+        <a href="#about" class="hover:text-indigo-400 transition">About</a>
+        <a href="#how-it-works" class="hover:text-indigo-400 transition">How</a>
+        <a href="#examples" class="hover:text-indigo-400 transition">Examples</a>
+        <a href="#pricing" class="hover:text-indigo-400 transition">Pricing</a>
+        <a href="#contact" class="hover:text-indigo-400 transition">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="min-h-screen flex items-center justify-center text-center px-6">
+    <div class="max-w-4xl">
+      <h1 class="text-5xl md:text-6xl font-extrabold neon-text animate-pulse leading-tight">
+        Turn Your Resume Into a Digital Masterpiece
+      </h1>
+      <p class="mt-6 text-lg text-gray-300 max-w-2xl mx-auto">
+        I hand-craft stunning, mobile-ready personal CV websites. No templates. No AI. Just code and creativity.
+      </p>
+      <div class="mt-8 flex flex-col sm:flex-row justify-center gap-4">
+        <a href="#contact" class="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 rounded-full font-bold hover-glow transition-smooth">
+          Start Now
+        </a>
+        <a href="#examples" class="px-8 py-4 border border-white hover:border-indigo-300 rounded-full font-bold hover-glow transition-smooth">
+          See Examples
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works Section -->
+  <section id="how-it-works" class="py-24 px-6 bg-black/40 glass">
+    <div class="max-w-5xl mx-auto text-center">
+      <h2 class="text-4xl font-bold neon-text mb-10">How It Works</h2>
+      <div class="grid md:grid-cols-4 gap-6 text-left">
+        <div class="p-6 rounded-xl bg-gradient-to-br from-indigo-700 to-indigo-500 text-white shadow-xl">
+          <h3 class="text-xl font-semibold mb-2">Step 1: Contact Me</h3>
+          <p class="text-sm text-gray-100">Fill in the form with your details and upload your resume.</p>
+        </div>
+        <div class="p-6 rounded-xl bg-gradient-to-br from-purple-700 to-purple-500 text-white shadow-xl">
+          <h3 class="text-xl font-semibold mb-2">Step 2: I Build It</h3>
+          <p class="text-sm text-gray-100">I hand-code your personalized website from scratch.</p>
+        </div>
+        <div class="p-6 rounded-xl bg-gradient-to-br from-pink-600 to-pink-400 text-white shadow-xl">
+          <h3 class="text-xl font-semibold mb-2">Step 3: Review</h3>
+          <p class="text-sm text-gray-100">You preview your site and request any tweaks.</p>
+        </div>
+        <div class="p-6 rounded-xl bg-gradient-to-br from-cyan-600 to-cyan-400 text-white shadow-xl">
+          <h3 class="text-xl font-semibold mb-2">Step 4: Launch</h3>
+          <p class="text-sm text-gray-100">Your site goes live with hosting and a shareable link.</p>
         </div>
       </div>
-    </header>
-    <!-- Hero Section -->
-    <section class="py-20 bg-gradient-to-br from-indigo-50 to-white">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center">
-        <div class="md:w-1/2 mb-10 md:mb-0">
-          <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight">
-            Your Personal CV, Online in Minutes
-          </h1>
-          <p class="mt-6 text-lg text-gray-600 max-w-lg">
-            I'll turn your resume into a stunning personal website — custom built just for you.
-          </p>
-          <div class="mt-8 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-            <a href="#contact" class="px-6 py-3 bg-indigo-600 text-white font-medium rounded-md hover:bg-indigo-700 hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200">
-              Build My CV Website
-            </a>
-            <a href="#examples" class="px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 hover:shadow hover:border-indigo-300 transform hover:-translate-y-1 transition-all duration-200">
-              See Examples
-            </a>
-          </div>
+    </div>
+  </section>
+
+  <!-- Examples Section -->
+  <section id="examples" class="py-24 px-6 bg-gradient-to-b from-black via-indigo-950 to-black">
+    <div class="max-w-6xl mx-auto text-center">
+      <h2 class="text-4xl font-bold neon-text mb-6">Live CV Showcases</h2>
+      <div class="grid md:grid-cols-2 gap-10 mt-10">
+        <!-- CV 1 -->
+        <div class="rounded-2xl glass p-6 hover-glow transition-smooth">
+          <img src="https://placehold.co/600x300/1e1b4b/ffffff?text=John+Doe+CV" alt="John CV" class="rounded-lg mb-4">
+          <h3 class="text-xl font-bold">John Doe — Developer</h3>
+          <p class="text-sm text-gray-300 mb-4">A clean, responsive web dev portfolio with code highlights.</p>
+          <a href="https://thenetwork1ng.github.io/CVJohndoe/" target="_blank" class="inline-block px-6 py-2 bg-indigo-600 rounded-full font-semibold hover:bg-indigo-700 transition-smooth">View Site</a>
         </div>
-        <div class="md:w-1/2">
-          <img src="https://placehold.co/600x400/indigo/white?text=Personal+CV+Website " alt="CV Website Preview" class="rounded-lg shadow-lg w-full" />
-        </div>
-      </div>
-    </section>
-    <!-- About Section -->
-    <section id="about" class="py-20 bg-white">
-      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 class="text-3xl font-bold text-gray-900">I Create Beautiful Personal CV Websites</h2>
-        <p class="mt-6 text-lg text-gray-600">
-          Hi! I'm a web designer who specializes in turning resumes into sleek, modern, mobile-friendly personal websites. No templates, no AI — just hand-coded designs tailored to your style and experience.
-        </p>
-        <div class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="bg-gray-50 p-6 rounded-lg shadow-sm hover:shadow-lg transition-shadow">
-            <h3 class="text-xl font-semibold text-gray-900">No Templates</h3>
-            <p class="mt-2 text-gray-600">Each site is designed from scratch, not based on any template.</p>
-          </div>
-          <div class="bg-gray-50 p-6 rounded-lg shadow-sm hover:shadow-lg transition-shadow">
-            <h3 class="text-xl font-semibold text-gray-900">Hand-Crafted</h3>
-            <p class="mt-2 text-gray-600">Every line of code is written by me — with care and attention to detail.</p>
-          </div>
-          <div class="bg-gray-50 p-6 rounded-lg shadow-sm hover:shadow-lg transition-shadow">
-            <h3 class="text-xl font-semibold text-gray-900">Fast & Responsive</h3>
-            <p class="mt-2 text-gray-600">Your site will look great on phones, tablets, and desktops.</p>
-          </div>
-          <div class="bg-gray-50 p-6 rounded-lg shadow-sm hover:shadow-lg transition-shadow">
-            <h3 class="text-xl font-semibold text-gray-900">Easy to Update</h3>
-            <p class="mt-2 text-gray-600">I make updates easy — just send me what you'd like changed!</p>
-          </div>
+
+        <!-- CV 2 -->
+        <div class="rounded-2xl glass p-6 hover-glow transition-smooth">
+          <img src="https://placehold.co/600x300/3b0764/ffffff?text=Sarah+Lee+CV" alt="Sarah CV" class="rounded-lg mb-4">
+          <h3 class="text-xl font-bold">Sarah Lee — Designer</h3>
+          <p class="text-sm text-gray-300 mb-4">A vibrant personal design showcase with animations and visuals.</p>
+          <a href="https://thenetwork1ng.github.io/CVSarahLee/" target="_blank" class="inline-block px-6 py-2 bg-pink-600 rounded-full font-semibold hover:bg-pink-700 transition-smooth">View Site</a>
         </div>
       </div>
-    </section>
-    <!-- How It Works Section -->
-    <section id="how-it-works" class="py-20 bg-gray-50">
-      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 class="text-3xl font-bold text-gray-900">How It Works</h2>
-        <p class="mt-4 text-lg text-gray-600">It's simple — here's how we bring your resume online:</p>
-        <div class="mt-12 space-y-8">
-          <div class="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-            <div class="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 font-bold">1</div>
-            <h3 class="text-lg font-semibold">Send Me Your Resume</h3>
-            <p class="mt-2 text-gray-600">Share your resume and any specific preferences you have.</p>
-          </div>
-          <div class="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-            <div class="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 font-bold">2</div>
-            <h3 class="text-lg font-semibold">Design Phase</h3>
-            <p class="mt-2 text-gray-600">I'll design your website and send you a preview for feedback.</p>
-          </div>
-          <div class="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-            <div class="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 font-bold">3</div>
-            <h3 class="text-lg font-semibold">Go Live</h3>
-            <p class="mt-2 text-gray-600">After final approval, your personal CV site goes live online.</p>
-          </div>
-        </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section id="pricing" class="py-24 px-6 bg-black/30 glass">
+    <div class="max-w-3xl mx-auto text-center">
+      <h2 class="text-4xl font-bold neon-text">One Price. Everything Included.</h2>
+      <p class="mt-4 text-gray-300">Simple pricing. Lifetime access. Custom design.</p>
+      <div class="mt-10 p-10 bg-gradient-to-br from-indigo-700 to-purple-600 rounded-3xl shadow-2xl">
+        <h3 class="text-3xl font-extrabold mb-4">R700</h3>
+        <ul class="text-left text-sm space-y-3 text-gray-100">
+          <li>✅ Fully custom-coded design</li>
+          <li>✅ Responsive for all devices</li>
+          <li>✅ Hosting included</li>
+          <li>✅ Free updates for 1 year</li>
+        </ul>
+        <a href="#contact" class="mt-6 inline-block px-8 py-3 bg-black/60 border border-white rounded-full font-bold hover-glow transition-smooth">
+          Get Yours Now
+        </a>
       </div>
-    </section>
-    <!-- Example Sites Section -->
-    <section id="examples" class="py-20 bg-white">
-      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-12">
-          <h2 class="text-3xl font-bold text-gray-900">Example CV Websites</h2>
-          <p class="mt-4 text-lg text-gray-600">Check out some of the websites I've created recently.</p>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <!-- John Doe CV Site (Now Clickable) -->
-          <a href="https://thenetwork1ng.github.io/CVJohndoe/ " target="_blank" rel="noopener noreferrer" class="block group">
-            <div class="bg-gray-50 rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300">
-              <img src="https://placehold.co/800x500/indigo/white?text=CV+Site+1 " alt="CV Site 1" class="w-full h-48 object-cover transition-transform duration-300 transform group-hover:scale-105" />
-              <div class="p-6">
-                <h3 class="text-xl font-semibold text-gray-900">John Doe - Software Developer</h3>
-                <p class="mt-2 text-gray-600">A minimal, modern tech-focused CV site.</p>
-              </div>
-            </div>
-          </a>
-          <!-- Sarah Lee CV Site (Now Clickable) -->
-          <a href="https://thenetwork1ng.github.io/CVSarahLee/ " target="_blank" rel="noopener noreferrer" class="block group">
-            <div class="bg-gray-50 rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300">
-              <img src="https://placehold.co/800x500/purple/white?text=CV+Site+2 " alt="CV Site 2" class="w-full h-48 object-cover transition-transform duration-300 transform group-hover:scale-105" />
-              <div class="p-6">
-                <h3 class="text-xl font-semibold text-gray-900">Sarah Lee - Graphic Designer</h3>
-                <p class="mt-2 text-gray-600">A creative portfolio-style CV site with project showcases.</p>
-              </div>
-            </div>
-          </a>
-        </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section id="contact" class="py-24 px-6 bg-gradient-to-br from-black via-gray-900 to-black">
+    <div class="max-w-3xl mx-auto text-center">
+      <h2 class="text-4xl font-bold neon-text">Let’s Get You Online</h2>
+      <p class="mt-4 text-gray-300">Use the form below to send your CV and contact info.</p>
+      <div class="mt-10">
+        <iframe 
+          title="Contact Form"
+          aria-label="CV Form"
+          src="https://tally.so/embed/wLgVby?transparentBackground=1&dynamicHeight=1"
+          width="100%" 
+          frameborder="0" 
+          marginheight="0" 
+          marginwidth="0" 
+          height="250" 
+          class="w-full max-w-xl mx-auto rounded-lg shadow-lg border border-gray-600">
+        </iframe>
       </div>
-    </section>
-    <!-- Pricing Section -->
-    <section id="pricing" class="py-20 bg-gray-50">
-      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 class="text-3xl font-bold text-gray-900">Simple Pricing</h2>
-        <p class="mt-4 text-lg text-gray-600">One flat rate — no hidden fees, no monthly costs.</p>
-        <div class="mt-10 bg-white p-8 rounded-lg shadow-md inline-block">
-          <h3 class="text-2xl font-bold text-gray-900">Starting at R700</h3>
-          <ul class="mt-6 space-y-3 text-gray-600 text-left max-w-xs mx-auto">
-            <li class="flex items-start">
-              <svg class="w-5 h-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              Fully custom design
-            </li>
-            <li class="flex items-start">
-              <svg class="w-5 h-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              Mobile responsive layout
-            </li>
-            <li class="flex items-start">
-              <svg class="w-5 h-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              Hosting included
-            </li>
-            <li class="flex items-start">
-              <svg class="w-5 h-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              One year of free updates
-            </li>
-          </ul>
-          <div class="mt-8">
-            <a href="#contact" class="inline-block px-6 py-3 bg-indigo-600 text-white font-medium rounded-md hover:bg-indigo-700 hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200">
-              Book Now
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-    <!-- Contact Section -->
-    <section id="contact" class="py-20 bg-white">
-      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 class="text-3xl font-bold text-gray-900">Let's Work Together</h2>
-        <p class="mt-4 text-lg text-gray-600">Get in touch and we can start building your personal CV website today.</p>
-        <!-- Embedded Tally Form -->
-        <div class="mt-10 flex justify-center">
-          <iframe 
-            src="https://tally.so/embed/wLgVby?transparentBackground=1&dynamicHeight=1 "
-            loading="lazy" 
-            width="100%" 
-            frameborder="0" 
-            marginheight="0" 
-            marginwidth="0" 
-            height="200" 
-            class="w-full max-w-xl rounded-lg shadow-md border border-gray-200"
-          >
-            Loading…
-          </iframe>
-        </div>
-      </div>
-    </section>
-    <!-- Footer -->
-    <footer class="bg-gray-900 text-white py-8">
-      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <p>&copy; <script>document.write(new Date().getFullYear())</script> YourCVOnline. Handcrafted by You.</p>
-      </div>
-    </footer>
-  </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-8 bg-black/80 text-center text-gray-400 text-sm">
+    &copy; <script>document.write(new Date().getFullYear())</script> YourCVOnline. Designed & coded by hand.
+  </footer>
 </body>
 </html>
