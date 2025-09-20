@@ -1,0 +1,449 @@
+/* Custom Font Declaration */
+@font-face {
+    font-family: 'MrScribbles';
+    src: url('Mr $cr!bbl3$.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    overflow: hidden; /* Disable all scrolling */
+    scroll-snap-type: y proximity;
+    scroll-behavior: smooth;
+    scroll-padding-top: 0px;
+    height: 100vh; /* Only show one section at a time */
+}
+
+/* Section Styles */
+.section {
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform;
+    z-index: 1;
+}
+
+/* 3D Canvas backgrounds */
+.bg-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* Enable mouse interaction for the artistic canvas */
+#artistic-canvas {
+    pointer-events: auto;
+    cursor: grab;
+}
+
+#artistic-canvas:active {
+    cursor: grabbing;
+}
+
+.content {
+    text-align: center;
+    z-index: 2;
+    max-width: 600px;
+    padding: 2rem;
+    position: relative;
+}
+
+.content h1 {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    font-weight: bold;
+}
+
+.content p {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+}
+
+/* Section 1: thenerworKING - Network 3D Scene */
+.section-1 {
+    transform: translateY(0%);
+    z-index: 3;
+    color: white;
+}
+
+/* Section 2: Blend Optimum - Particle Blend Scene */
+.section-2 {
+    transform: translateY(100%);
+    z-index: 2;
+    color: white;
+}
+
+/* Section 3: Mr $cr!bbl3$ - Artistic Scene */
+.section-3 {
+    transform: translateY(200%);
+    z-index: 1;
+    color: white;
+}
+
+/* Custom font for Mr Scribbles section */
+.section-3 .content h1 {
+    font-family: 'MrScribbles', 'Comic Sans MS', cursive;
+    font-size: 5.5rem;
+    letter-spacing: 4px;
+    text-shadow: 4px 4px 8px rgba(0,0,0,0.5);
+    display: inline-block;
+    perspective: 1000px;
+}
+
+/* Individual letter animations */
+.section-3 .content h1 .letter {
+    display: inline-block;
+    animation: letterFloat 3s ease-in-out infinite;
+    transform-origin: center bottom;
+    transition: all 0.3s ease;
+}
+
+.section-3 .content h1 .letter:hover {
+    transform: scale(1.2) rotateY(360deg);
+    color: #ffff00;
+    text-shadow: 0 0 20px rgba(255,255,0,0.8);
+}
+
+/* Staggered animation delays for each letter */
+.section-3 .content h1 .letter:nth-child(1) { animation-delay: 0s; }
+.section-3 .content h1 .letter:nth-child(2) { animation-delay: 0.1s; }
+.section-3 .content h1 .letter:nth-child(3) { animation-delay: 0.2s; }
+.section-3 .content h1 .letter:nth-child(4) { animation-delay: 0.3s; }
+.section-3 .content h1 .letter:nth-child(5) { animation-delay: 0.4s; }
+.section-3 .content h1 .letter:nth-child(6) { animation-delay: 0.5s; }
+.section-3 .content h1 .letter:nth-child(7) { animation-delay: 0.6s; }
+.section-3 .content h1 .letter:nth-child(8) { animation-delay: 0.7s; }
+.section-3 .content h1 .letter:nth-child(9) { animation-delay: 0.8s; }
+.section-3 .content h1 .letter:nth-child(10) { animation-delay: 0.9s; }
+.section-3 .content h1 .letter:nth-child(11) { animation-delay: 1s; }
+.section-3 .content h1 .letter:nth-child(12) { animation-delay: 1.1s; }
+.section-3 .content h1 .letter:nth-child(13) { animation-delay: 1.2s; }
+
+@keyframes letterFloat {
+    0%, 100% {
+        transform: translateY(0px) rotateZ(0deg);
+    }
+    25% {
+        transform: translateY(-8px) rotateZ(2deg);
+    }
+    50% {
+        transform: translateY(-4px) rotateZ(-1deg);
+    }
+    75% {
+        transform: translateY(-12px) rotateZ(1deg);
+    }
+}
+
+.section-3::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M10,30 Q30,10 50,30 T90,30" stroke="rgba(255,255,255,0.1)" stroke-width="2" fill="none"/><path d="M20,70 Q40,50 60,70 T100,70" stroke="rgba(255,255,255,0.1)" stroke-width="1" fill="none"/></svg>');
+    z-index: 1;
+}
+
+/* Button Styles */
+.cta-button {
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 15px 30px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
+    z-index: 3;
+}
+
+.cta-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.cta-button:hover::before {
+    left: 100%;
+}
+
+.cta-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.cta-button:active {
+    transform: translateY(-1px);
+}
+
+/* Specific button hover effects */
+.btn-1:hover {
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+}
+
+.btn-2:hover {
+    box-shadow: 0 10px 25px rgba(245, 87, 108, 0.4);
+}
+
+.btn-3:hover {
+    box-shadow: 0 10px 25px rgba(79, 172, 254, 0.4);
+}
+
+/* Navigation Dots */
+.nav-dots {
+    position: fixed;
+    right: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1000;
+}
+
+.dot {
+    display: block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    margin: 10px 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.dot:hover,
+.dot.active {
+    background: white;
+    transform: scale(1.2);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Navigation Arrows */
+.nav-arrows {
+    position: fixed;
+    left: 50%;
+    bottom: 30px;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    gap: 20px;
+}
+
+.arrow-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    backdrop-filter: blur(15px);
+    position: relative;
+    overflow: hidden;
+}
+
+.arrow-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.6s;
+}
+
+.arrow-btn:hover::before {
+    left: 100%;
+}
+
+.arrow-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.6);
+    transform: translateY(-5px) scale(1.1);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+}
+
+.arrow-btn:active {
+    transform: translateY(-2px) scale(1.05);
+}
+
+.arrow-btn svg {
+    transition: transform 0.3s ease;
+}
+
+.arrow-btn:hover svg {
+    transform: scale(1.2);
+}
+
+/* Arrow states */
+.arrow-btn.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.arrow-btn.disabled:hover {
+    transform: none;
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: none;
+}
+
+/* Arrow pulse animation */
+@keyframes arrowPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 15px rgba(255, 255, 255, 0);
+    }
+}
+
+.arrow-btn.pulse {
+    animation: arrowPulse 2s infinite;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .content h1 {
+        font-size: 2.5rem;
+    }
+    
+    /* Custom responsive sizing for Mr Scribbles font */
+    .section-3 .content h1 {
+        font-size: 4rem;
+        letter-spacing: 2px;
+    }
+    
+    .content p {
+        font-size: 1rem;
+    }
+    
+    .cta-button {
+        padding: 12px 24px;
+        font-size: 1rem;
+    }
+    
+    .nav-dots {
+        right: 20px;
+    }
+    
+    .dot {
+        width: 10px;
+        height: 10px;
+    }
+    
+    /* Mobile arrow styles */
+    .nav-arrows {
+        bottom: 20px;
+        gap: 15px;
+    }
+    
+    .arrow-btn {
+        width: 45px;
+        height: 45px;
+    }
+}
+
+@media (max-width: 480px) {
+    .content {
+        padding: 1rem;
+    }
+    
+    .content h1 {
+        font-size: 2rem;
+    }
+    
+    /* Custom responsive sizing for Mr Scribbles font on small screens */
+    .section-3 .content h1 {
+        font-size: 3rem;
+        letter-spacing: 2px;
+    }
+    
+    .cta-button {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+    
+    /* Small screen arrow styles */
+    .nav-arrows {
+        bottom: 15px;
+        gap: 10px;
+    }
+    
+    .arrow-btn {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .arrow-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 0px;
+}
+
+* {
+    scroll-behavior: smooth;
+}
+
+/* Animation for content */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.content {
+    animation: fadeInUp 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform, opacity;
+    transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
