@@ -14,6 +14,18 @@ class ThreeJSScenes {
         this.cameraAnimating = false;
         this.cameraAnimationFrame = null;
         
+        // User interaction tracking for auto-rotation
+        this.userInteracting = false;
+        this.interactionTimeout = null;
+        this.lastInteractionTime = 0;
+        
+        // Bobbing animation properties
+        this.bobbingEnabled = true;
+        this.bobbingTime = 0;
+        this.artisticAnimationStarted = false; // Debug flag
+        this.potionModelFound = false; // Debug flag
+        this.potionModelNotFoundLogged = false; // Debug flag
+        
         // Keyframe animation data from viewer.js
         this.keyframes = [
             {
@@ -135,18 +147,19 @@ class ThreeJSScenes {
         }
         
         const { controls, camera } = this.scenes.artistic;
-        console.log('Starting keyframe animation with', this.keyframes.length, 'keyframes');
+        console.log('Artistic scene activated - OrbitControls auto-rotation will handle rotation');
         
-        // Start camera keyframe animation
-        this.animateKeyframes(this.keyframes, controls, camera);
+        // Keep camera keyframe animations disabled for manual interaction
+        // this.animateKeyframes(this.keyframes, controls, camera);
         
-        // Start model animations if available
+        // Keep model animations disabled - model will be static but interactable
         if (this.artisticMixer && this.artisticAnimationActions.size > 0) {
-            console.log('Starting model animations:', this.artisticAnimationActions.size, 'actions');
+            console.log('Model animations found but keeping disabled for static display:', this.artisticAnimationActions.size, 'actions');
+            // Don't start the animations - keep them paused
             this.artisticAnimationActions.forEach(action => {
                 action.reset();
-                action.paused = false;
-                action.play();
+                action.paused = true; // Keep paused
+                // Don't call action.play()
             });
         } else {
             console.log('No model animations found. Mixer:', !!this.artisticMixer, 'Actions:', this.artisticAnimationActions.size);
@@ -312,44 +325,29 @@ class ThreeJSScenes {
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1;
 
-        // Add lighting for the crystal formation with enhanced glow
-        const ambientLight = new THREE.AmbientLight(0x404080, 0.4);
+        // Add lighting for the GLB model
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
         scene.add(ambientLight);
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
         directionalLight.position.set(5, 5, 5);
         directionalLight.castShadow = true;
         scene.add(directionalLight);
 
-        // Enhanced point lights for dramatic crystal glow effect
-        const pointLight1 = new THREE.PointLight(0x00f2fe, 1.2, 12);
+        // Add point lights for dramatic effect
+        const pointLight1 = new THREE.PointLight(0x00f2fe, 0.8, 10);
         pointLight1.position.set(-3, 2, -2);
         scene.add(pointLight1);
 
-        const pointLight2 = new THREE.PointLight(0x4facfe, 1.0, 10);
+        const pointLight2 = new THREE.PointLight(0x4facfe, 0.6, 8);
         pointLight2.position.set(3, -1, 2);
         scene.add(pointLight2);
-
-        // Add crystal core light - emanates from the center
-        const coreLight = new THREE.PointLight(0x88ddff, 2.0, 8);
-        coreLight.position.set(0, -0.5, 0);
-        scene.add(coreLight);
-
-        // Add magical accent lights around the crystal base
-        const accentLight1 = new THREE.PointLight(0xaa44ff, 0.8, 6);
-        accentLight1.position.set(0, -1.5, 0);
-        scene.add(accentLight1);
-
-        const accentLight2 = new THREE.PointLight(0x44ffaa, 0.6, 4);
-        accentLight2.position.set(0, 1, 0);
-        scene.add(accentLight2);
 
         // Store art elements and model
         const artElements = [];
         let potionModel = null;
-        let crystalFormation = null;
 
-        // Load the GLB model first
+        // Load the GLB model
         const loader = new THREE.GLTFLoader();
         loader.load(
             './mr scribbles/halloween_potion.glb',
@@ -369,15 +367,23 @@ class ThreeJSScenes {
                     console.log(`Found ${gltf.animations.length} animations in the GLB model`);
                 }
                 
-                // Scale and position the model - place it on the crystal platform
-                potionModel.scale.setScalar(1.2);
-                potionModel.position.set(0, -0.8, 0);
+                // Check if mobile device
+                const isMobile = window.innerWidth <= 768;
+                
+                // Scale and position the model based on device
+                if (isMobile) {
+                    potionModel.scale.setScalar(1.0); // Smaller on mobile
+                    potionModel.position.set(0, -1.8, 0); // Lower position on mobile
+                } else {
+                    potionModel.scale.setScalar(1.5); // Original size on desktop
+                    potionModel.position.set(0, -1, 0); // Original position on desktop
+                }
                 
                 // Add some rotation
                 potionModel.rotation.y = Math.PI * 0.25;
                 
                 scene.add(potionModel);
-                console.log('Halloween potion model loaded successfully and integrated with crystal!');
+                console.log('Halloween potion model loaded successfully!');
             },
             (progress) => {
                 console.log('Loading progress:', (progress.loaded / progress.total * 100) + '%');
@@ -386,6 +392,8 @@ class ThreeJSScenes {
                 console.error('Error loading GLB model:', error);
                 
                 // Fallback: create a simple potion-like object
+                const isMobile = window.innerWidth <= 768;
+                
                 const potionGeometry = new THREE.CylinderGeometry(0.3, 0.4, 1.2, 8);
                 const potionMaterial = new THREE.MeshBasicMaterial({ 
                     color: 0x4facfe,
@@ -393,132 +401,19 @@ class ThreeJSScenes {
                     opacity: 0.8
                 });
                 const fallbackPotion = new THREE.Mesh(potionGeometry, potionMaterial);
-                fallbackPotion.position.set(0, -0.8, 0);
+                
+                // Position fallback potion responsively
+                if (isMobile) {
+                    fallbackPotion.position.set(0, -1.3, 0); // Lower on mobile
+                    fallbackPotion.scale.setScalar(0.7); // Smaller on mobile
+                } else {
+                    fallbackPotion.position.set(0, -0.5, 0); // Original position
+                    fallbackPotion.scale.setScalar(1.0); // Original size
+                }
                 scene.add(fallbackPotion);
                 artElements.push({ mesh: fallbackPotion, type: 'potion' });
             }
         );
-
-        // Create mystical crystal formation around the potion
-        const createCrystalFormation = () => {
-            const crystalGroup = new THREE.Group();
-            
-            // Smaller satellite crystals positioned closer around the potion
-            for (let i = 0; i < 6; i++) {
-                const angle = (i / 6) * Math.PI * 2;
-                const radius = 0.8 + Math.random() * 0.2; // Closer to potion
-                const height = 0.8 + Math.random() * 0.6;
-                
-                const smallCrystalGeometry = new THREE.ConeGeometry(0.12, height, 6);
-                const hue = 0.5 + Math.random() * 0.2; // Blue to cyan range
-                const smallCrystalMaterial = new THREE.MeshPhysicalMaterial({
-                    color: new THREE.Color().setHSL(hue, 0.8, 0.6),
-                    transparent: true,
-                    opacity: 0.8,
-                    roughness: 0.2,
-                    metalness: 0.2,
-                    clearcoat: 0.8,
-                    transmission: 0.4,
-                    ior: 2.2
-                });
-                
-                const smallCrystal = new THREE.Mesh(smallCrystalGeometry, smallCrystalMaterial);
-                smallCrystal.position.set(
-                    Math.cos(angle) * radius,
-                    -0.8 + Math.random() * 0.2,
-                    Math.sin(angle) * radius
-                );
-                smallCrystal.rotation.set(
-                    Math.random() * 0.3,
-                    angle + Math.random() * 0.5,
-                    Math.random() * 0.2
-                );
-                
-                crystalGroup.add(smallCrystal);
-                artElements.push({ 
-                    mesh: smallCrystal, 
-                    type: 'satellite_crystal',
-                    baseY: smallCrystal.position.y,
-                    floatOffset: Math.random() * Math.PI * 2
-                });
-            }
-            
-            // Add some magical runes/symbols floating around the potion
-            for (let i = 0; i < 8; i++) {
-                const runeGeometry = new THREE.SphereGeometry(0.05, 8, 8);
-                const runeMaterial = new THREE.MeshBasicMaterial({
-                    color: 0x44aaff,
-                    emissive: 0x2288dd,
-                    emissiveIntensity: 0.5
-                });
-                const rune = new THREE.Mesh(runeGeometry, runeMaterial);
-                
-                const angle = (i / 8) * Math.PI * 2;
-                rune.position.set(
-                    Math.cos(angle) * 0.5, // Much closer to potion
-                    -0.4 + Math.random() * 0.3, // Closer vertically too
-                    Math.sin(angle) * 0.5
-                );
-                
-                crystalGroup.add(rune);
-                artElements.push({
-                    mesh: rune,
-                    type: 'rune',
-                    angle: angle,
-                    baseY: rune.position.y
-                });
-            }
-            
-            crystalGroup.position.set(0, 0, 0);
-            scene.add(crystalGroup);
-            
-            crystalFormation = crystalGroup;
-            
-            console.log('Mystical crystal formation created around potion!');
-        };
-
-        // Create the crystal formation
-        createCrystalFormation();
-
-        // Create energy orbs that orbit around the crystal
-        for (let i = 0; i < 8; i++) {
-            const orbGeometry = new THREE.SphereGeometry(0.08, 16, 16);
-            const orbMaterial = new THREE.MeshPhysicalMaterial({
-                color: new THREE.Color().setHSL(0.55 + Math.random() * 0.2, 1.0, 0.7),
-                transparent: true,
-                opacity: 0.9,
-                emissive: new THREE.Color().setHSL(0.55 + Math.random() * 0.2, 1.0, 0.3),
-                emissiveIntensity: 0.8,
-                roughness: 0.1,
-                metalness: 0.1
-            });
-            
-            const orb = new THREE.Mesh(orbGeometry, orbMaterial);
-            
-            // Position orbs in different orbital layers
-            const layer = Math.floor(i / 3); // 3 layers
-            const angleInLayer = (i % 3) * (Math.PI * 2 / 3);
-            const radius = 1.5 + layer * 0.8;
-            const height = -0.5 + layer * 0.6;
-            
-            orb.position.set(
-                Math.cos(angleInLayer) * radius,
-                height,
-                Math.sin(angleInLayer) * radius
-            );
-            
-            scene.add(orb);
-            artElements.push({
-                mesh: orb,
-                type: 'energy_orb',
-                orbitAngle: angleInLayer,
-                orbitRadius: radius,
-                orbitSpeed: 0.008 + Math.random() * 0.004,
-                baseHeight: height,
-                layer: layer,
-                pulseOffset: Math.random() * Math.PI * 2
-            });
-        }
 
         // Create floating artistic elements around the potion
         // Paint brushes
@@ -548,65 +443,35 @@ class ThreeJSScenes {
             artElements.push({ mesh: brush, type: 'brush', angle: angle, radius: radius });
         }
 
-        // Enhanced magic particles with trails and sparks
-        for (let i = 0; i < 35; i++) {
-            const particleGeometry = new THREE.SphereGeometry(0.02 + Math.random() * 0.03, 8, 8);
-            const particleType = Math.random();
-            
-            let particleMaterial;
-            if (particleType < 0.6) {
-                // Regular magic particles
-                particleMaterial = new THREE.MeshBasicMaterial({ 
-                    color: new THREE.Color().setHSL(
-                        0.5 + Math.random() * 0.3, // Blue-cyan range
-                        0.9,
-                        0.7
-                    ),
-                    transparent: true,
-                    opacity: 0.8
-                });
-            } else if (particleType < 0.85) {
-                // Glowing sparks
-                particleMaterial = new THREE.MeshBasicMaterial({ 
-                    color: new THREE.Color().setHSL(0.15, 1.0, 0.8), // Golden sparks
-                    transparent: true,
-                    opacity: 0.9
-                });
-            } else {
-                // Energy wisps
-                particleMaterial = new THREE.MeshBasicMaterial({ 
-                    color: new THREE.Color().setHSL(0.8, 0.7, 0.9), // Purple wisps
-                    transparent: true,
-                    opacity: 0.6
-                });
-            }
-            
+        // Magic particles
+        for (let i = 0; i < 20; i++) {
+            const particleGeometry = new THREE.SphereGeometry(0.05, 8, 8);
+            const particleMaterial = new THREE.MeshBasicMaterial({ 
+                color: new THREE.Color().setHSL(
+                    0.5 + Math.random() * 0.3, // Blue-cyan range
+                    0.9,
+                    0.7
+                ),
+                transparent: true,
+                opacity: 0.8
+            });
             const particle = new THREE.Mesh(particleGeometry, particleMaterial);
             
             particle.position.set(
-                (Math.random() - 0.5) * 5,
-                Math.random() * 4 - 1,
-                (Math.random() - 0.5) * 5
+                (Math.random() - 0.5) * 4,
+                Math.random() * 3,
+                (Math.random() - 0.5) * 4
             );
             
             scene.add(particle);
-            
-            let particleTypeStr = 'particle';
-            if (particleType >= 0.6 && particleType < 0.85) particleTypeStr = 'spark';
-            else if (particleType >= 0.85) particleTypeStr = 'wisp';
-            
             artElements.push({ 
                 mesh: particle, 
-                type: particleTypeStr,
+                type: 'particle',
                 velocity: {
                     x: (Math.random() - 0.5) * 0.02,
-                    y: Math.random() * 0.015 + 0.005,
+                    y: Math.random() * 0.01 + 0.005,
                     z: (Math.random() - 0.5) * 0.02
-                },
-                lifeTime: Math.random() * 300 + 200,
-                age: 0,
-                spiralAngle: Math.random() * Math.PI * 2,
-                spiralRadius: Math.random() * 0.5 + 0.2
+                }
             });
         }
 
@@ -623,15 +488,60 @@ class ThreeJSScenes {
         controls.maxDistance = 10;
         controls.maxPolarAngle = Math.PI * 0.75; // Limit vertical rotation
         controls.minPolarAngle = Math.PI * 0.25;
-        controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.5; // Slow auto-rotation
+        controls.autoRotate = true; // Enable built-in auto-rotation
+        controls.autoRotateSpeed = 0.5; // Slow rotation speed
         controls.target.set(0, 0, 0);
+        
+        console.log('OrbitControls created for canvas3 with auto-rotation enabled:', controls);
         
         // Ensure canvas can receive mouse events
         canvas.style.pointerEvents = 'auto';
         canvas.style.cursor = 'grab';
+        
+        // Basic event listeners for cursor feedback and interaction tracking
+        canvas.addEventListener('mousedown', (e) => {
+            canvas.style.cursor = 'grabbing';
+            this.userInteracting = true;
+            this.bobbingEnabled = false;
+            this.lastInteractionTime = Date.now();
+        });
+        
+        canvas.addEventListener('mouseup', (e) => {
+            canvas.style.cursor = 'grab';
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (this.userInteracting) {
+                this.lastInteractionTime = Date.now();
+            }
+        });
+        
+        canvas.addEventListener('wheel', (e) => {
+            this.userInteracting = true;
+            this.bobbingEnabled = false;
+            this.lastInteractionTime = Date.now();
+        });
+        
+        canvas.addEventListener('mouseleave', (e) => {
+            canvas.style.cursor = 'grab';
+            this.userInteracting = false;
+            // Re-enable bobbing after 3 seconds of no interaction
+            setTimeout(() => {
+                if (Date.now() - this.lastInteractionTime > 3000) {
+                    this.bobbingEnabled = true;
+                    this.bobbingTime = 0; // Reset bobbing animation
+                }
+            }, 3000);
+        });
+        
+        // Re-enable bobbing after 3 seconds of no interaction
+        setInterval(() => {
+            if (!this.userInteracting && Date.now() - this.lastInteractionTime > 3000) {
+                this.bobbingEnabled = true;
+            }
+        }, 1000);
 
-        this.scenes.artistic = { scene, camera, renderer, artElements, potionModel, crystalFormation, pointLight1, pointLight2, controls, coreLight, accentLight1, accentLight2 };
+        this.scenes.artistic = { scene, camera, renderer, artElements, potionModel, pointLight1, pointLight2, controls };
         this.renderers.artistic = renderer;
         this.cameras.artistic = camera;
     }
@@ -713,30 +623,53 @@ class ThreeJSScenes {
     animateArtistic() {
         if (!this.scenes.artistic) return;
         
-        const { scene, camera, renderer, artElements, potionModel, crystalFormation, pointLight1, pointLight2, controls, coreLight, accentLight1, accentLight2 } = this.scenes.artistic;
+        // Debug: log once when animation starts
+        if (!this.artisticAnimationStarted) {
+            console.log('animateArtistic() function is now running');
+            this.artisticAnimationStarted = true;
+        }
+        
+        const { scene, camera, renderer, artElements, potionModel, pointLight1, pointLight2, controls } = this.scenes.artistic;
         
         // Update controls for smooth interaction
         if (controls) {
             controls.update();
         }
         
-        // Update animation mixer for GLB model animations
-        if (this.artisticMixer) {
-            this.artisticMixer.update(this.artisticClock.getDelta());
-        }
+        // Don't update animation mixer since we want the model to be static
+        // if (this.artisticMixer) {
+        //     this.artisticMixer.update(this.artisticClock.getDelta());
+        // }
         
-        // Animate the potion model
+        // Keep the potion model with bobbing animation (OrbitControls handles rotation)
         if (potionModel) {
-            potionModel.rotation.y += 0.005;
-            potionModel.position.y = -0.8 + Math.sin(Date.now() * 0.001) * 0.08;
-        }
-        
-        // Animate the crystal formation (gentle movement around the potion)
-        if (crystalFormation) {
-            crystalFormation.rotation.y += 0.002;
+            // Debug: log once when potion model is found
+            if (!this.potionModelFound) {
+                console.log('Potion model found - OrbitControls will handle camera auto-rotation, model will bob');
+                this.potionModelFound = true;
+            }
             
-            // Subtle floating effect for the whole crystal formation
-            crystalFormation.position.y = Math.sin(Date.now() * 0.0008) * 0.05;
+            // Base position - responsive to device size
+            const isMobile = window.innerWidth <= 768;
+            const baseY = isMobile ? -1.8 : -1;
+            
+            // Add bobbing motion if enabled
+            if (this.bobbingEnabled) {
+                this.bobbingTime += 0.05; // Faster bobbing speed
+                const bobbingOffset = Math.sin(this.bobbingTime) * 0.3; // Larger bobbing amplitude
+                potionModel.position.y = baseY + bobbingOffset;
+            } else {
+                // Keep at base position when bobbing is disabled
+                potionModel.position.y = baseY;
+            }
+            
+            // No manual rotation needed - OrbitControls handles this automatically
+        } else {
+            // Debug: log if potion model is not found
+            if (!this.potionModelNotFoundLogged) {
+                console.log('Potion model not found in animation loop');
+                this.potionModelNotFoundLogged = true;
+            }
         }
         
         // Animate art elements
@@ -744,7 +677,7 @@ class ThreeJSScenes {
             const { mesh, type } = element;
             
             if (type === 'brush') {
-                // Orbit around the potion/crystal setup
+                // Orbit around the potion
                 element.angle += 0.01;
                 mesh.position.x = Math.cos(element.angle) * element.radius;
                 mesh.position.z = Math.sin(element.angle) * element.radius;
@@ -752,129 +685,58 @@ class ThreeJSScenes {
                 
                 mesh.rotation.x += 0.01;
                 mesh.rotation.y += 0.005;
-            } else if (type === 'energy_orb') {
-                // Orbit around the potion/crystal setup in multiple layers
-                element.orbitAngle += element.orbitSpeed;
+            } else if (type === 'particle') {
+                // Magic particle movement
+                mesh.position.add(new THREE.Vector3(
+                    element.velocity.x,
+                    element.velocity.y,
+                    element.velocity.z
+                ));
                 
-                mesh.position.x = Math.cos(element.orbitAngle) * element.orbitRadius;
-                mesh.position.z = Math.sin(element.orbitAngle) * element.orbitRadius;
-                mesh.position.y = element.baseHeight + Math.sin(Date.now() * 0.002 + element.pulseOffset) * 0.15;
-                
-                // Pulsing glow effect
-                const pulseScale = 1 + Math.sin(Date.now() * 0.003 + element.pulseOffset) * 0.4;
-                mesh.scale.setScalar(pulseScale);
-                
-                // Color shifting
-                const hue = (0.55 + Math.sin(Date.now() * 0.001 + element.pulseOffset) * 0.1) % 1;
-                mesh.material.color.setHSL(hue, 1.0, 0.7);
-                mesh.material.emissive.setHSL(hue, 1.0, 0.3);
-            } else if (type === 'satellite_crystal') {
-                // Gentle floating animation for satellite crystals
-                mesh.position.y = element.baseY + Math.sin(Date.now() * 0.0008 + element.floatOffset) * 0.06;
-                mesh.rotation.y += 0.002;
-            } else if (type === 'rune') {
-                // Magical runes pulse and rotate
-                mesh.position.y = element.baseY + Math.sin(Date.now() * 0.003 + index) * 0.02;
-                mesh.rotation.y += 0.01;
-                
-                // Pulsing glow
-                const intensity = 0.5 + Math.sin(Date.now() * 0.004 + index) * 0.3;
-                mesh.material.emissiveIntensity = intensity;
-                
-                // Scale pulsing
-                const scale = 1 + Math.sin(Date.now() * 0.005 + index) * 0.2;
-                mesh.scale.setScalar(scale);
-            } else if (type === 'particle' || type === 'spark' || type === 'wisp') {
-                // Enhanced magic particle movement
-                element.age++;
-                
-                if (type === 'spark') {
-                    // Sparks move in quick bursts
-                    mesh.position.add(new THREE.Vector3(
-                        element.velocity.x * 2,
-                        element.velocity.y * 1.5,
-                        element.velocity.z * 2
-                    ));
-                    
-                    // Sparks fade as they age
-                    const fadeRatio = Math.max(0, 1 - element.age / element.lifeTime);
-                    mesh.material.opacity = fadeRatio * 0.9;
-                    
-                } else if (type === 'wisp') {
-                    // Wisps move in spirals around the potion/crystal
-                    element.spiralAngle += 0.02;
-                    const spiralX = Math.cos(element.spiralAngle) * element.spiralRadius;
-                    const spiralZ = Math.sin(element.spiralAngle) * element.spiralRadius;
-                    
-                    mesh.position.add(new THREE.Vector3(
-                        element.velocity.x + spiralX * 0.01,
-                        element.velocity.y,
-                        element.velocity.z + spiralZ * 0.01
-                    ));
-                    
-                    // Wisps pulse gently
-                    const pulseScale = 1 + Math.sin(Date.now() * 0.004 + index) * 0.3;
-                    mesh.scale.setScalar(pulseScale);
-                    
-                } else {
-                    // Regular particles
-                    mesh.position.add(new THREE.Vector3(
-                        element.velocity.x,
-                        element.velocity.y,
-                        element.velocity.z
-                    ));
-                }
-                
-                // Reset particles that go too high or fade completely
-                if (mesh.position.y > 5 || element.age > element.lifeTime) {
-                    mesh.position.y = -1.5;
-                    mesh.position.x = (Math.random() - 0.5) * 3;
-                    mesh.position.z = (Math.random() - 0.5) * 3;
-                    element.age = 0;
-                    mesh.material.opacity = type === 'spark' ? 0.9 : 0.8;
+                // Reset particles that go too high
+                if (mesh.position.y > 4) {
+                    mesh.position.y = -1;
+                    mesh.position.x = (Math.random() - 0.5) * 2;
+                    mesh.position.z = (Math.random() - 0.5) * 2;
                 }
                 
                 mesh.rotation.y += 0.02;
                 
-                // Regular pulsing glow for particles
-                if (type === 'particle') {
-                    const scale = 1 + Math.sin(Date.now() * 0.003 + index) * 0.3;
-                    mesh.scale.setScalar(scale);
-                }
+                // Pulsing glow effect
+                const scale = 1 + Math.sin(Date.now() * 0.003 + index) * 0.3;
+                mesh.scale.setScalar(scale);
             } else if (type === 'potion') {
-                // Fallback potion animation
-                mesh.rotation.y += 0.01;
-                mesh.position.y = -0.8 + Math.sin(Date.now() * 0.001) * 0.08;
+                // Fallback potion - add bobbing motion (camera auto-rotation handles rotation)
+                const isMobile = window.innerWidth <= 768;
+                const baseY = isMobile ? -1.3 : -0.5;
+                
+                // Add bobbing motion if enabled
+                if (this.bobbingEnabled) {
+                    const bobbingOffset = Math.sin(this.bobbingTime) * 0.3; // Larger amplitude to match main model
+                    mesh.position.y = baseY + bobbingOffset;
+                } else {
+                    // Keep at base position when bobbing is disabled
+                    mesh.position.y = baseY;
+                }
+                
+                // No manual rotation needed - OrbitControls handles camera rotation
             }
         });
 
-        // Animate enhanced lighting
+        // Animate point lights
         if (pointLight1) {
-            pointLight1.position.x = -3 + Math.sin(Date.now() * 0.0008) * 1.2;
-            pointLight1.position.y = 2 + Math.cos(Date.now() * 0.0006) * 0.8;
-            pointLight1.intensity = 1.2 + Math.sin(Date.now() * 0.002) * 0.4;
+            pointLight1.position.x = -3 + Math.sin(Date.now() * 0.0008) * 1;
+            pointLight1.position.y = 2 + Math.cos(Date.now() * 0.0006) * 0.5;
+            pointLight1.intensity = 0.8 + Math.sin(Date.now() * 0.002) * 0.3;
         }
         
         if (pointLight2) {
-            pointLight2.position.x = 3 + Math.cos(Date.now() * 0.0007) * 1.2;
-            pointLight2.position.z = 2 + Math.sin(Date.now() * 0.0009) * 1.2;
-            pointLight2.intensity = 1.0 + Math.cos(Date.now() * 0.0015) * 0.3;
+            pointLight2.position.x = 3 + Math.cos(Date.now() * 0.0007) * 1;
+            pointLight2.position.z = 2 + Math.sin(Date.now() * 0.0009) * 1;
+            pointLight2.intensity = 0.6 + Math.cos(Date.now() * 0.0015) * 0.2;
         }
-        
-        if (coreLight) {
-            coreLight.intensity = 2.0 + Math.sin(Date.now() * 0.003) * 0.8;
-            coreLight.position.y = -0.8 + Math.sin(Date.now() * 0.001) * 0.1;
-        }
-        
-        if (accentLight1) {
-            accentLight1.intensity = 0.8 + Math.cos(Date.now() * 0.0025) * 0.4;
-            const hue = (Date.now() * 0.0001) % 1;
-            accentLight1.color.setHSL(hue, 0.8, 0.6);
-        }
-        
-        if (accentLight2) {
-            accentLight2.intensity = 0.6 + Math.sin(Date.now() * 0.002) * 0.3;
-        }
+
+        // Camera is now controlled by OrbitControls, no manual movement needed
 
         renderer.render(scene, camera);
         
@@ -926,6 +788,24 @@ class ThreeJSScenes {
         Object.values(this.renderers).forEach(renderer => {
             renderer.setSize(width, height);
         });
+        
+        // Update potion model positioning for mobile/desktop
+        this.updatePotionModelPosition();
+    }
+    
+    updatePotionModelPosition() {
+        if (this.scenes.artistic && this.scenes.artistic.potionModel) {
+            const isMobile = window.innerWidth <= 768;
+            const potionModel = this.scenes.artistic.potionModel;
+            
+            if (isMobile) {
+                potionModel.scale.setScalar(1.0);
+                potionModel.position.set(0, -1.8, 0);
+            } else {
+                potionModel.scale.setScalar(1.5);
+                potionModel.position.set(0, -1, 0);
+            }
+        }
     }
 }
 

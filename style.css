@@ -50,12 +50,13 @@ body {
 }
 
 /* Enable mouse interaction for the artistic canvas */
-#artistic-canvas {
+#canvas3 {
     pointer-events: auto;
     cursor: grab;
+    z-index: 1; /* Same level as section, behind content */
 }
 
-#artistic-canvas:active {
+#canvas3:active {
     cursor: grabbing;
 }
 
@@ -101,14 +102,67 @@ body {
     color: white;
 }
 
+/* Allow pointer events to pass through content to canvas in section 3 */
+.section-3 .content {
+    pointer-events: none; /* Allow events to pass through to canvas */
+    position: absolute; /* Changed from relative to absolute */
+    top: 2rem; /* Position at top */
+    right: 2rem; /* Position at right */
+    z-index: 2; /* Above canvas for visibility */
+    max-width: 350px; /* Smaller width for corner placement */
+    text-align: right; /* Right-align text */
+    padding: 1.5rem; /* Adjusted padding */
+    background: rgba(0, 0, 0, 0.1); /* Subtle background for readability */
+    backdrop-filter: blur(5px); /* Glass effect */
+    border-radius: 15px; /* Rounded corners */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border */
+}
+
+/* Re-enable pointer events for interactive elements */
+.section-3 .content h1,
+.section-3 .content p,
+.section-3 .content button {
+    pointer-events: auto; /* These elements remain clickable */
+    position: relative;
+    z-index: 3; /* Ensure buttons are on top */
+}
+
+/* Ensure proper cursor for interactive elements */
+.section-3 .content button {
+    cursor: pointer;
+}
+
+.section-3 .content h1 {
+    cursor: default;
+}
+
+.section-3 .content p {
+    cursor: default;
+}
+
 /* Custom font for Mr Scribbles section */
 .section-3 .content h1 {
     font-family: 'MrScribbles', 'Comic Sans MS', cursive;
-    font-size: 5.5rem;
-    letter-spacing: 4px;
+    font-size: 3.5rem; /* Reduced size for corner placement */
+    letter-spacing: 2px; /* Reduced spacing */
     text-shadow: 4px 4px 8px rgba(0,0,0,0.5);
     display: inline-block;
     perspective: 1000px;
+    margin-bottom: 0.5rem; /* Reduced margin */
+}
+
+/* Adjust paragraph for corner layout */
+.section-3 .content p {
+    font-size: 1rem; /* Slightly smaller */
+    margin-bottom: 1.5rem; /* Reduced margin */
+    opacity: 0.9;
+    line-height: 1.4; /* Better line height for readability */
+}
+
+/* Adjust button for corner layout */
+.section-3 .content .cta-button {
+    padding: 0.8rem 1.5rem; /* Slightly smaller button */
+    font-size: 0.9rem; /* Smaller font */
 }
 
 /* Individual letter animations */
@@ -339,6 +393,30 @@ body {
 
 .arrow-btn.pulse {
     animation: arrowPulse 2s infinite;
+}
+
+/* Desktop Enhancement for Section 3 */
+@media (min-width: 1024px) {
+    .section-3 .content {
+        top: 3rem; /* More space from top on desktop */
+        right: 3rem; /* More space from right on desktop */
+        max-width: 400px; /* Slightly larger on desktop */
+        padding: 2rem; /* More padding on desktop */
+    }
+    
+    .section-3 .content h1 {
+        font-size: 4rem; /* Larger on desktop */
+        letter-spacing: 3px;
+    }
+    
+    .section-3 .content p {
+        font-size: 1.1rem; /* Slightly larger on desktop */
+    }
+    
+    .section-3 .content .cta-button {
+        padding: 1rem 2rem; /* Larger button on desktop */
+        font-size: 1rem;
+    }
 }
 
 /* Responsive Design */
