@@ -49,7 +49,17 @@ body {
     pointer-events: none;
 }
 
-/* Enable mouse interaction for the artistic canvas */
+/* Enable mouse interaction for blend and artistic canvases */
+#canvas2 {
+    pointer-events: auto;
+    cursor: grab;
+    z-index: 1; /* Same level as section, behind content */
+}
+
+#canvas2:active {
+    cursor: grabbing;
+}
+
 #canvas3 {
     pointer-events: auto;
     cursor: grab;
