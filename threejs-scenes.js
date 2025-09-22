@@ -26,6 +26,10 @@ class ThreeJSScenes {
         this.potionModelFound = false; // Debug flag
         this.potionModelNotFoundLogged = false; // Debug flag
         
+        // Camera coordinates display
+        this.cameraDisplay = null;
+        this.currentActiveScene = 'network'; // Track which scene is currently active
+        
         // Keyframe animation data from viewer.js
         this.keyframes = [
             {
@@ -62,6 +66,9 @@ class ThreeJSScenes {
         
         // Force create lighting controls immediately
         this.createLightingControls();
+        
+        // Create camera coordinates display
+        this.createCameraDisplay();
     }
 
     // Animation helper functions (from viewer.js)
@@ -139,6 +146,116 @@ class ThreeJSScenes {
             this.cameraAnimationFrame = requestAnimationFrame(step);
         };
         animateToNext();
+    }
+
+    // Smooth camera transition with curved path around object
+    smoothCameraTransition(camera, controls, targetView, duration = 2000) {
+        const startPosition = camera.position.clone();
+        const startRotation = camera.rotation.clone();
+        const targetPosition = new THREE.Vector3(targetView.position.x, targetView.position.y, targetView.position.z);
+        
+        // Convert target rotation from degrees to radians
+        const targetRotation = {
+            x: targetView.rotation.x * Math.PI / 180,
+            y: targetView.rotation.y * Math.PI / 180,
+            z: targetView.rotation.z * Math.PI / 180
+        };
+        
+        // Object center (where the model is positioned)
+        const objectCenter = new THREE.Vector3(0, 0, 0);
+        
+        // Create a smoother curved path using more control points
+        const controlPoints = [];
+        
+        // Calculate intermediate points that curve around the object
+        const startToCenter = startPosition.clone().sub(objectCenter);
+        const endToCenter = targetPosition.clone().sub(objectCenter);
+        
+        // Calculate curve radius (distance from object + extra clearance)
+        const startDistance = startPosition.distanceTo(objectCenter);
+        const endDistance = targetPosition.distanceTo(objectCenter);
+        const curveRadius = Math.max(startDistance, endDistance) + 4; // Increased clearance for smoother arc
+        
+        // Create intermediate points that arc around the object with more control points
+        const arcAngle1 = Math.atan2(startToCenter.z, startToCenter.x);
+        const arcAngle2 = Math.atan2(endToCenter.z, endToCenter.x);
+        
+        // Determine the shorter arc direction
+        let angleDiff = arcAngle2 - arcAngle1;
+        if (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+        if (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+        
+        // Calculate Y interpolation for smooth height transition
+        const startY = startPosition.y;
+        const endY = targetPosition.y;
+        const maxY = Math.max(startY, endY) + 1.5; // Reduced height for smoother arc
+        
+        // Add start position
+        controlPoints.push(startPosition.clone());
+        
+        // Create more intermediate points for ultra-smooth curve (7 total points)
+        for (let i = 1; i <= 5; i++) {
+            const t = i / 6; // 6 segments for smoother interpolation
+            const currentAngle = arcAngle1 + angleDiff * t;
+            
+            // Smooth height curve using sine function for natural arc
+            const heightProgress = Math.sin(t * Math.PI); // Creates smooth bell curve
+            const currentY = startY + (endY - startY) * t + (maxY - Math.max(startY, endY)) * heightProgress;
+            
+            controlPoints.push(new THREE.Vector3(
+                Math.cos(currentAngle) * curveRadius,
+                currentY,
+                Math.sin(currentAngle) * curveRadius
+            ));
+        }
+        
+        // Add end position
+        controlPoints.push(targetPosition.clone());
+        
+        // Create ultra-smooth curve using Catmull-Rom with tension
+        const curve = new THREE.CatmullRomCurve3(controlPoints, false, 'catmullrom', 0.3); // Lower tension for smoother curves
+        
+        const startTime = performance.now();
+        
+        const animate = (currentTime) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Ultra-smooth easing function (cubic bezier-like)
+            const easeProgress = progress < 0.5 
+                ? 4 * progress * progress * progress 
+                : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+            
+            // Get position along the curved path with higher precision
+            const curvePosition = curve.getPoint(easeProgress);
+            camera.position.copy(curvePosition);
+            
+            // Ultra-smooth rotation interpolation using spherical interpolation for smoother transitions
+            const rotationProgress = progress * progress * (3 - 2 * progress); // Smoother rotation easing
+            
+            camera.rotation.x = this.lerp(startRotation.x, targetRotation.x, rotationProgress);
+            camera.rotation.y = this.lerp(startRotation.y, targetRotation.y, rotationProgress);
+            camera.rotation.z = this.lerp(startRotation.z, targetRotation.z, rotationProgress);
+            
+            // Update controls with damping for extra smoothness
+            if (controls) {
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.1; // Extra smooth damping during transition
+                controls.update();
+            }
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                // Restore normal damping after transition
+                if (controls) {
+                    controls.dampingFactor = 0.05;
+                }
+                console.log('✅ Ultra-smooth curved camera transition completed');
+            }
+        };
+        
+        requestAnimationFrame(animate);
     }
 
     // Start camera and model animations for artistic scene
@@ -419,55 +536,29 @@ class ThreeJSScenes {
             }
         );
 
-        // Create particle system with blend theme
-        const particleCount = 500; // Reduced to not overwhelm the model
-        const particles = new THREE.BufferGeometry();
-        const positions = new Float32Array(particleCount * 3);
-        const colors = new Float32Array(particleCount * 3);
-        const velocities = [];
-
-        for (let i = 0; i < particleCount; i++) {
-            // Positions - spread around the model
-            const angle = (i / particleCount) * Math.PI * 2;
-            const radius = 3 + Math.random() * 2;
-            positions[i * 3] = Math.cos(angle) * radius + (Math.random() - 0.5) * 2;
-            positions[i * 3 + 1] = (Math.random() - 0.5) * 4;
-            positions[i * 3 + 2] = Math.sin(angle) * radius + (Math.random() - 0.5) * 2;
-
-            // Colors (blend between pink and red)
-            const color = new THREE.Color();
-            color.setHSL(
-                Math.random() * 0.1 + 0.85, // Pink to red range
-                0.8,
-                0.6
+        camera.position.set(13.22, 0.10, -12.43);
+        
+        // Set camera rotation (convert degrees to radians)
+        camera.rotation.set(
+            -179.5 * Math.PI / 180, // X: -179.5° to radians
+            46.8 * Math.PI / 180,   // Y: 46.8° to radians
+            179.7 * Math.PI / 180   // Z: 179.7° to radians
+        );
+        
+        // Check if mobile device and adjust camera position
+        const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        if (isMobile) {
+            // Mobile view coordinates
+            camera.position.set(12.95, -1.86, -12.72);
+            camera.rotation.set(
+                THREE.MathUtils.degToRad(163.4),
+                THREE.MathUtils.degToRad(44.3),
+                THREE.MathUtils.degToRad(-168.2)
             );
-            colors[i * 3] = color.r;
-            colors[i * 3 + 1] = color.g;
-            colors[i * 3 + 2] = color.b;
-
-            // Velocities
-            velocities.push({
-                x: (Math.random() - 0.5) * 0.01,
-                y: (Math.random() - 0.5) * 0.01,
-                z: (Math.random() - 0.5) * 0.01
-            });
         }
-
-        particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-        const particleMaterial = new THREE.PointsMaterial({
-            size: 0.05,
-            vertexColors: true,
-            transparent: true,
-            opacity: 0.6,
-            blending: THREE.AdditiveBlending
-        });
-
-        const particleSystem = new THREE.Points(particles, particleMaterial);
-        scene.add(particleSystem);
-
-        camera.position.set(0, 1, 12);
+        
+        // Set the target for OrbitControls (camera is looking towards origin)
         camera.lookAt(0, 0, 0);
 
         // Add OrbitControls for mouse interaction
@@ -504,36 +595,24 @@ class ThreeJSScenes {
         // Click detection for playing animations
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
-        let animationState = 'at_start'; // 'at_start', 'playing_forward', 'at_end', 'playing_reverse'
-        let savedCameraDistance = 12; // Store the camera distance before animation
-        let currentReverseInterval = null; // Store reference to reverse interval
+        let isAnimationPlaying = false; // Simple boolean to track animation state
+        let isSlowingDown = false; // Track if we're in the slowdown phase
+        let slowdownInterval = null; // Store reference to slowdown interval
+        let isRotatedView = false; // Track if we're currently in rotated view
         
-        function smoothZoomTo(targetDistance, duration = 1000) {
-            const startDistance = camera.position.distanceTo(controls.target);
-            const startTime = Date.now();
-            
-            function animateZoom() {
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                
-                // Smooth easing function
-                const easeProgress = progress * progress * (3 - 2 * progress);
-                
-                const currentDistance = startDistance + (targetDistance - startDistance) * easeProgress;
-                
-                // Update camera position maintaining the same direction
-                const direction = camera.position.clone().sub(controls.target).normalize();
-                camera.position.copy(controls.target).add(direction.multiplyScalar(currentDistance));
-                
-                controls.update();
-                
-                if (progress < 1) {
-                    requestAnimationFrame(animateZoom);
-                }
-            }
-            
-            animateZoom();
-        }
+        // Define the default and rotated camera views
+        const defaultView = {
+            position: { x: 13.22, y: 0.10, z: -12.43 },
+            rotation: { x: -179.5, y: 46.8, z: 179.7 } // degrees
+        };
+        
+        const rotatedView = {
+            position: { x: -8.15, y: 0.55, z: 7.16 },
+            rotation: { x: -4.4, y: -48.6, z: -3.3 } // degrees
+        };
+        
+        // Capture reference to class instance for use in handleInteraction
+        const sceneInstance = this;
         
         function handleInteraction(event) {
             console.log('🔥 Interaction detected! Event type:', event.type);
@@ -578,200 +657,141 @@ class ThreeJSScenes {
             if (intersects.length > 0) {
                 console.log('🔍 First intersected object name:', intersects[0].object.name || 'unnamed');
                 
-                // Check if the clicked object or its parent has the name "button"
+                // Check if the clicked object or its parent has the name "button" or "rotate"
                 let clickedObject = intersects[0].object;
                 let searchDepth = 0;
                 let buttonFound = false;
+                let rotateFound = false;
                 
                 while (clickedObject && searchDepth < 10) {
                     console.log(`🔍 Checking object depth ${searchDepth}: "${clickedObject.name || 'unnamed'}" (type: ${clickedObject.type})`);
                     
-                    // Check ONLY for objects specifically named "button" (case-insensitive)
+                    // Check for objects specifically named "button" (case-insensitive)
                     if (clickedObject.name && clickedObject.name.toLowerCase() === 'button') {
                         buttonFound = true;
                         console.log('✅ BUTTON FOUND at depth', searchDepth);
                         break;
                     }
+                    
+                    // Check for objects specifically named "rotate" (case-insensitive)
+                    if (clickedObject.name && clickedObject.name.toLowerCase() === 'rotate') {
+                        rotateFound = true;
+                        console.log('✅ ROTATE FOUND at depth', searchDepth);
+                        break;
+                    }
+                    
                     clickedObject = clickedObject.parent;
                     searchDepth++;
                 }
                 
                 console.log('🎯 Button search result:', buttonFound);
+                console.log('🎯 Rotate search result:', rotateFound);
                 
                 // Only proceed if we found an object specifically named "button"
                 if (buttonFound) {
-                    console.log('Button tapped! Current animation state:', animationState);
+                    console.log('Button tapped! Current animation state:', isAnimationPlaying ? 'playing' : 'stopped');
                     
                     const mixer = blendMixer || window.blendMixer;
                     const actions = blendAnimationActions || window.blendAnimationActions;
                     
                     if (mixer && actions && actions.size > 0) {
-                        const duration = Math.max(...Array.from(actions.values()).map(action => action._clip.duration));
-                        console.log('Animation duration:', duration);
-                        
-                        if (animationState === 'at_start') {
-                            console.log('Starting forward animation...');
-                            // Save current camera distance
-                            savedCameraDistance = camera.position.distanceTo(controls.target);
+                        if (!isAnimationPlaying && !isSlowingDown) {
+                            // Start looping animation
+                            console.log('▶️ Starting looping animation...');
+                            isAnimationPlaying = true;
                             
-                            // Zoom out to maximum distance smoothly
-                            smoothZoomTo(controls.maxDistance, 800);
-                            
-                            // Play forward from start to end
-                            animationState = 'playing_forward';
-                            actions.forEach((action) => {
-                                action.stop();
-                                action.reset();
-                                action.setEffectiveWeight(1.0);
-                                action.setLoop(THREE.LoopOnce, 1);
-                                action.clampWhenFinished = true;
-                                action.timeScale = 1.0;
-                                action.play();
-                            });
-                            
-                            // Set timer to freeze at last frame and zoom back
-                            setTimeout(() => {
-                                animationState = 'at_end';
-                                console.log('Forward animation completed, state now:', animationState);
-                                // Zoom back to saved position
-                                smoothZoomTo(savedCameraDistance, 800);
-                            }, duration * 1000);
-                            
-                        } else if (animationState === 'at_end') {
-                            console.log('Starting reverse animation...');
-                            // Clear any existing reverse interval
-                            if (currentReverseInterval) {
-                                clearInterval(currentReverseInterval);
-                                currentReverseInterval = null;
+                            // Clear any existing slowdown interval
+                            if (slowdownInterval) {
+                                clearInterval(slowdownInterval);
+                                slowdownInterval = null;
                             }
                             
-                            // Save current camera distance
-                            savedCameraDistance = camera.position.distanceTo(controls.target);
-                            
-                            // Zoom out to maximum distance smoothly
-                            smoothZoomTo(controls.maxDistance, 800);
-                            
-                            // Play reverse from end to start
-                            animationState = 'playing_reverse';
-                            
-                            // Ensure all actions are properly set to end position first
                             actions.forEach((action) => {
-                                action.time = action._clip.duration;
-                                action.enabled = true;
-                            });
-                            mixer.update(0); // Force update to apply end position
-                            
-                            // Start reverse animation with fresh timing
-                            const startTime = Date.now();
-                            currentReverseInterval = setInterval(() => {
-                                const elapsed = (Date.now() - startTime) / 1000;
-                                const progress = elapsed / duration;
-                                
-                                if (progress >= 1.0) {
-                                    // Animation complete - set to start position and stop
-                                    actions.forEach((action) => {
-                                        action.time = 0;
-                                        action.enabled = true;
-                                    });
-                                    mixer.update(0); // Force update to apply position
-                                    clearInterval(currentReverseInterval);
-                                    currentReverseInterval = null;
-                                    animationState = 'at_start';
-                                    console.log('Reverse animation completed, state now:', animationState);
-                                    
-                                    // Zoom back to saved position
-                                    smoothZoomTo(savedCameraDistance, 800);
-                                    return;
+                                // Check if action was previously paused
+                                if (action.paused) {
+                                    // Resume from current position
+                                    action.paused = false;
+                                    action.timeScale = 2.0; // Faster animation speed
+                                    action.setLoop(THREE.LoopRepeat, Infinity);
+                                    // Don't reset - continue from current frame
+                                } else {
+                                    // Fresh start
+                                    action.stop();
+                                    action.reset();
+                                    action.setEffectiveWeight(1.0);
+                                    action.setLoop(THREE.LoopRepeat, Infinity);
+                                    action.timeScale = 2.0; // Faster animation speed
+                                    action.play();
                                 }
+                            });
+                            
+                        } else if (isAnimationPlaying && !isSlowingDown) {
+                            // Start slowdown process
+                            console.log('⏬ Starting slowdown animation...');
+                            isAnimationPlaying = false;
+                            isSlowingDown = true;
+                            
+                            const slowdownDuration = 4000; // 4 seconds
+                            const startTime = Date.now();
+                            const initialTimeScale = 2.0; // Start from faster speed
+                            
+                            slowdownInterval = setInterval(() => {
+                                const elapsed = Date.now() - startTime;
+                                const progress = Math.min(elapsed / slowdownDuration, 1);
                                 
-                                // Update each action's time in reverse (from end to start)
+                                // Ease out function for smooth deceleration
+                                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                                const timeScale = initialTimeScale * (1 - easeProgress);
+                                
+                                // Apply the timeScale to all actions
                                 actions.forEach((action) => {
-                                    action.time = action._clip.duration * (1.0 - progress);
-                                    action.enabled = true;
+                                    action.timeScale = Math.max(timeScale, 0.01); // Minimum speed to avoid stopping completely
                                 });
                                 
-                                // Force mixer update to apply the time changes
-                                mixer.update(0);
+                                if (progress >= 1) {
+                                    // Slowdown complete - stop at current frame
+                                    console.log('⏹️ Slowdown complete, stopping at current frame...');
+                                    
+                                    actions.forEach((action) => {
+                                        // Don't reset - just stop at current frame
+                                        action.timeScale = 0; // Completely stop
+                                        action.paused = true; // Pause the action
+                                        action.enabled = true; // Keep it enabled to maintain current pose
+                                    });
+                                    
+                                    clearInterval(slowdownInterval);
+                                    slowdownInterval = null;
+                                    isSlowingDown = false;
+                                    console.log('✅ Animation stopped at current frame');
+                                }
                             }, 16); // ~60 FPS
-                        } else {
-                            console.log('Button tapped while animation is playing. Current state:', animationState);
+                        } else if (isSlowingDown) {
+                            console.log('🔄 Animation is currently slowing down, please wait...');
                         }
-                        // Ignore clicks while animations are playing
                     }
                 }
-                // If no "button" object was clicked, do nothing
+                
+                // Handle "rotate" object clicks for camera view switching
+                if (rotateFound) {
+                    console.log('🔄 Rotate object clicked! Toggling camera view...');
+                    
+                    // Toggle between rotated and normal view
+                    if (isRotatedView) {
+                        // Switch back to default view
+                        console.log('📷 Switching to default view');
+                        sceneInstance.smoothCameraTransition(camera, controls, defaultView, 2000);
+                        isRotatedView = false;
+                    } else {
+                        // Switch to rotated view
+                        console.log('📷 Switching to rotated view');
+                        sceneInstance.smoothCameraTransition(camera, controls, rotatedView, 2000);
+                        isRotatedView = true;
+                    }
+                }
+                
+                // If no special object was clicked, do nothing
             } else {
                 console.log('❌ No intersections found - nothing was clicked');
-                
-                // FALLBACK: If we're at_end state and user tapped but no intersections, 
-                // assume they meant to tap the button for reverse animation
-                if (animationState === 'at_end') {
-                    console.log('🔄 FALLBACK: Triggering reverse animation since we are at_end state');
-                    
-                    const mixer = blendMixer || window.blendMixer;
-                    const actions = blendAnimationActions || window.blendAnimationActions;
-                    
-                    if (mixer && actions && actions.size > 0) {
-                        const duration = Math.max(...Array.from(actions.values()).map(action => action._clip.duration));
-                        
-                        console.log('🔄 Starting fallback reverse animation...');
-                        
-                        // Clear any existing reverse interval
-                        if (currentReverseInterval) {
-                            clearInterval(currentReverseInterval);
-                            currentReverseInterval = null;
-                        }
-                        
-                        // Save current camera distance
-                        savedCameraDistance = camera.position.distanceTo(controls.target);
-                        
-                        // Zoom out to maximum distance smoothly
-                        smoothZoomTo(controls.maxDistance, 800);
-                        
-                        // Play reverse from end to start
-                        animationState = 'playing_reverse';
-                        
-                        // Ensure all actions are properly set to end position first
-                        actions.forEach((action) => {
-                            action.time = action._clip.duration;
-                            action.enabled = true;
-                        });
-                        mixer.update(0); // Force update to apply end position
-                        
-                        // Start reverse animation with fresh timing
-                        const startTime = Date.now();
-                        currentReverseInterval = setInterval(() => {
-                            const elapsed = (Date.now() - startTime) / 1000;
-                            const progress = elapsed / duration;
-                            
-                            if (progress >= 1.0) {
-                                // Animation complete - set to start position and stop
-                                actions.forEach((action) => {
-                                    action.time = 0;
-                                    action.enabled = true;
-                                });
-                                mixer.update(0); // Force update to apply position
-                                clearInterval(currentReverseInterval);
-                                currentReverseInterval = null;
-                                animationState = 'at_start';
-                                console.log('✅ Fallback reverse animation completed, state now:', animationState);
-                                
-                                // Zoom back to saved position
-                                smoothZoomTo(savedCameraDistance, 800);
-                                return;
-                            }
-                            
-                            // Update each action's time in reverse (from end to start)
-                            actions.forEach((action) => {
-                                action.time = action._clip.duration * (1.0 - progress);
-                                action.enabled = true;
-                            });
-                            
-                            // Force mixer update to apply the time changes
-                            mixer.update(0);
-                        }, 16); // ~60 FPS
-                    }
-                }
             }
         }
         
@@ -779,65 +799,6 @@ class ThreeJSScenes {
         canvas.addEventListener('click', handleInteraction);
         canvas.addEventListener('touchend', handleInteraction, { passive: false });
         
-        // Add manual test function for debugging reverse animation
-        window.forceReverseAnimation = () => {
-            console.log('🚨 FORCING REVERSE ANIMATION MANUALLY');
-            const mixer = blendMixer || window.blendMixer;
-            const actions = blendAnimationActions || window.blendAnimationActions;
-            
-            if (mixer && actions && actions.size > 0) {
-                animationState = 'at_end'; // Force state to trigger reverse
-                console.log('🔧 Set state to at_end, starting manual reverse...');
-                
-                const duration = Math.max(...Array.from(actions.values()).map(action => action._clip.duration));
-                
-                // Clear any existing interval
-                if (currentReverseInterval) {
-                    clearInterval(currentReverseInterval);
-                    currentReverseInterval = null;
-                }
-                
-                // Start reverse animation
-                animationState = 'playing_reverse';
-                
-                // Set to end position first
-                actions.forEach((action) => {
-                    action.time = action._clip.duration;
-                    action.enabled = true;
-                });
-                mixer.update(0);
-                console.log('🔧 Set all actions to end position');
-                
-                // Start reverse
-                const startTime = Date.now();
-                currentReverseInterval = setInterval(() => {
-                    const elapsed = (Date.now() - startTime) / 1000;
-                    const progress = elapsed / duration;
-                    
-                    if (progress >= 1.0) {
-                        actions.forEach((action) => {
-                            action.time = 0;
-                            action.enabled = true;
-                        });
-                        mixer.update(0);
-                        clearInterval(currentReverseInterval);
-                        currentReverseInterval = null;
-                        animationState = 'at_start';
-                        console.log('✅ Manual reverse completed');
-                        return;
-                    }
-                    
-                    actions.forEach((action) => {
-                        action.time = action._clip.duration * (1.0 - progress);
-                        action.enabled = true;
-                    });
-                    mixer.update(0);
-                }, 16);
-            } else {
-                console.log('❌ No mixer/actions for manual reverse');
-            }
-        };
-
         // Create GUI controls for lighting adjustments
         let gui;
         
@@ -874,8 +835,7 @@ class ThreeJSScenes {
             pointLight4Intensity: 1.5,
             toneMappingExposure: 2.0,
             modelScale: window.innerWidth <= 768 ? 1.0 : 1.5,
-            backgroundColor: '#000000',
-            particleOpacity: 0.6
+            backgroundColor: '#000000'
         };
         
         // Make settings available globally for console access
@@ -893,7 +853,6 @@ class ThreeJSScenes {
                 clawCardModel.scale.setScalar(lightSettings.modelScale);
             }
             renderer.setClearColor(lightSettings.backgroundColor);
-            particleMaterial.opacity = lightSettings.particleOpacity;
             console.log('Lights updated!');
         };
         
@@ -936,9 +895,6 @@ class ThreeJSScenes {
             sceneFolder.addColor(lightSettings, 'backgroundColor').onChange((value) => {
                 renderer.setClearColor(value);
             });
-            sceneFolder.add(lightSettings, 'particleOpacity', 0, 1).onChange((value) => {
-                particleMaterial.opacity = value;
-            });
             
             // Add preset buttons
             const presets = {
@@ -975,10 +931,10 @@ class ThreeJSScenes {
         } else {
             // Create a simple HTML control panel as fallback
             console.log('Creating HTML fallback controls...');
-            gui = this.createHTMLControls(lightSettings, ambientLight, directionalLight, directionalLight2, pointLight1, pointLight2, pointLight3, pointLight4, renderer, particleMaterial, clawCardModel);
+            gui = this.createHTMLControls(lightSettings, ambientLight, directionalLight, directionalLight2, pointLight1, pointLight2, pointLight3, pointLight4, renderer, null, clawCardModel);
         }
 
-        this.scenes.blend = { scene, camera, renderer, particleSystem, velocities, blendElements, clawCardModel, pointLight1, pointLight2, pointLight3, pointLight4, controls, blendMixer, blendAnimationActions, blendClock, gui };
+        this.scenes.blend = { scene, camera, renderer, blendElements, clawCardModel, pointLight1, pointLight2, pointLight3, pointLight4, controls, blendMixer, blendAnimationActions, blendClock, gui };
         this.renderers.blend = renderer;
         this.cameras.blend = camera;
     }
@@ -1241,6 +1197,9 @@ class ThreeJSScenes {
 
         renderer.render(scene, camera);
         
+        // Update camera coordinates display
+        this.updateCameraDisplay();
+        
         if (this.isAnimating.network) {
             this.animationFrames.network = requestAnimationFrame(() => this.animateNetwork());
         }
@@ -1249,37 +1208,7 @@ class ThreeJSScenes {
     animateBlend() {
         if (!this.scenes.blend) return;
         
-        const { scene, camera, renderer, particleSystem, velocities, controls, blendMixer } = this.scenes.blend;
-        
-        const positions = particleSystem.geometry.attributes.position.array;
-        const colors = particleSystem.geometry.attributes.color.array;
-        
-        for (let i = 0; i < velocities.length; i++) {
-            // Update positions
-            positions[i * 3] += velocities[i].x;
-            positions[i * 3 + 1] += velocities[i].y;
-            positions[i * 3 + 2] += velocities[i].z;
-            
-            // Boundary checks (smaller boundaries to keep particles around the model)
-            if (Math.abs(positions[i * 3]) > 6) velocities[i].x *= -1;
-            if (Math.abs(positions[i * 3 + 1]) > 6) velocities[i].y *= -1;
-            if (Math.abs(positions[i * 3 + 2]) > 6) velocities[i].z *= -1;
-            
-            // Color blending animation
-            const time = Date.now() * 0.001;
-            const color = new THREE.Color();
-            color.setHSL(
-                (Math.sin(time + i * 0.1) * 0.1 + 0.9) % 1,
-                0.8,
-                0.6
-            );
-            colors[i * 3] = color.r;
-            colors[i * 3 + 1] = color.g;
-            colors[i * 3 + 2] = color.b;
-        }
-        
-        particleSystem.geometry.attributes.position.needsUpdate = true;
-        particleSystem.geometry.attributes.color.needsUpdate = true;
+        const { scene, camera, renderer, controls, blendMixer } = this.scenes.blend;
         
         // Update animation mixer - try multiple sources to ensure we get it
         const sceneBlendMixer = this.scenes.blend?.blendMixer;
@@ -1297,6 +1226,9 @@ class ThreeJSScenes {
         }
 
         renderer.render(scene, camera);
+        
+        // Update camera coordinates display
+        this.updateCameraDisplay();
         
         if (this.isAnimating.blend) {
             this.animationFrames.blend = requestAnimationFrame(() => this.animateBlend());
@@ -1422,6 +1354,9 @@ class ThreeJSScenes {
         // Camera is now controlled by OrbitControls, no manual movement needed
 
         renderer.render(scene, camera);
+        
+        // Update camera coordinates display
+        this.updateCameraDisplay();
         
         if (this.isAnimating.artistic) {
             this.animationFrames.artistic = requestAnimationFrame(() => this.animateArtistic());
@@ -1805,6 +1740,208 @@ class ThreeJSScenes {
         });
         
         console.log('🎨 LIGHTING CONTROLS CREATED AND VISIBLE!');
+    }
+    
+    // Create camera coordinates display
+    createCameraDisplay() {
+        const cameraPanel = document.createElement('div');
+        cameraPanel.id = 'camera-coordinates';
+        cameraPanel.style.cssText = `
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff88;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            z-index: 9998;
+            border: 1px solid #00ff88;
+            box-shadow: 0 2px 10px rgba(0, 255, 136, 0.2);
+            min-width: 200px;
+            backdrop-filter: blur(5px);
+        `;
+        
+        cameraPanel.innerHTML = `
+            <div style="color: #00ff88; font-weight: bold; margin-bottom: 5px; text-align: center;">📷 CAMERA COORDS</div>
+            <div style="font-size: 10px; margin-bottom: 3px;">Scene: <span id="scene-name" style="color: #ffff00;">Network</span></div>
+            <div style="font-size: 10px;">Position:</div>
+            <div style="margin-left: 10px;">
+                X: <span id="cam-x" style="color: #ff6b6b;">0.00</span><br>
+                Y: <span id="cam-y" style="color: #4ecdc4;">0.00</span><br>
+                Z: <span id="cam-z" style="color: #45b7d1;">0.00</span>
+            </div>
+            <div style="font-size: 10px; margin-top: 5px;">Rotation:</div>
+            <div style="margin-left: 10px;">
+                X: <span id="rot-x" style="color: #ff6b6b;">0.00</span><br>
+                Y: <span id="rot-y" style="color: #4ecdc4;">0.00</span><br>
+                Z: <span id="rot-z" style="color: #45b7d1;">0.00</span>
+            </div>
+            <div style="font-size: 10px; margin-top: 5px; margin-bottom: 3px;">Controls:</div>
+            <button id="toggle-panning" style="
+                margin-bottom: 5px;
+                padding: 3px 8px;
+                background: transparent;
+                color: #ff6b6b;
+                border: 1px solid #ff6b6b;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 9px;
+                width: 100%;
+            ">🚫 PANNING OFF</button>
+            <button id="toggle-camera-display" style="
+                margin-top: 3px;
+                padding: 3px 8px;
+                background: transparent;
+                color: #00ff88;
+                border: 1px solid #00ff88;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 9px;
+                width: 100%;
+            ">MINIMIZE</button>
+        `;
+        
+        document.body.appendChild(cameraPanel);
+        this.cameraDisplay = cameraPanel;
+        
+        // Add toggle functionality
+        document.getElementById('toggle-camera-display').addEventListener('click', () => {
+            const button = document.getElementById('toggle-camera-display');
+            const content = cameraPanel.children;
+            
+            if (button.textContent === 'MINIMIZE') {
+                // Hide all content except title and buttons
+                for (let i = 1; i < content.length - 2; i++) {
+                    content[i].style.display = 'none';
+                }
+                button.textContent = 'EXPAND';
+                cameraPanel.style.minWidth = '120px';
+            } else {
+                // Show all content
+                for (let i = 1; i < content.length - 2; i++) {
+                    content[i].style.display = 'block';
+                }
+                button.textContent = 'MINIMIZE';
+                cameraPanel.style.minWidth = '200px';
+            }
+        });
+        
+        // Add panning toggle functionality
+        document.getElementById('toggle-panning').addEventListener('click', () => {
+            const button = document.getElementById('toggle-panning');
+            
+            // Get the current active scene controls
+            let activeControls = null;
+            switch (this.currentActiveScene) {
+                case 'network':
+                    // Network scene doesn't have OrbitControls
+                    button.textContent = '❌ NO CONTROLS';
+                    button.style.color = '#666';
+                    button.style.borderColor = '#666';
+                    setTimeout(() => {
+                        button.textContent = '🚫 PANNING OFF';
+                        button.style.color = '#ff6b6b';
+                        button.style.borderColor = '#ff6b6b';
+                    }, 1000);
+                    return;
+                    
+                case 'blend':
+                    activeControls = this.scenes.blend?.controls;
+                    break;
+                    
+                case 'artistic':
+                    activeControls = this.scenes.artistic?.controls;
+                    break;
+            }
+            
+            if (activeControls) {
+                if (activeControls.enablePan) {
+                    // Disable panning
+                    activeControls.enablePan = false;
+                    button.textContent = '🚫 PANNING OFF';
+                    button.style.color = '#ff6b6b';
+                    button.style.borderColor = '#ff6b6b';
+                } else {
+                    // Enable panning
+                    activeControls.enablePan = true;
+                    button.textContent = '✅ PANNING ON';
+                    button.style.color = '#4ecdc4';
+                    button.style.borderColor = '#4ecdc4';
+                }
+                console.log(`📷 Panning ${activeControls.enablePan ? 'enabled' : 'disabled'} for ${this.currentActiveScene} scene`);
+            }
+        });
+        
+        console.log('📷 Camera coordinates display created!');
+    }
+    
+    // Update camera coordinates display
+    updateCameraDisplay() {
+        if (!this.cameraDisplay) return;
+        
+        // Determine active scene based on current section
+        let activeCamera = null;
+        let sceneName = 'Unknown';
+        
+        // Get current section from DOM or use tracked value
+        const sections = document.querySelectorAll('.section');
+        let currentSection = null;
+        
+        sections.forEach((section, index) => {
+            const transform = getComputedStyle(section).transform;
+            if (transform && transform !== 'none') {
+                const matrix = transform.match(/matrix.*\((.+)\)/);
+                if (matrix) {
+                    const values = matrix[1].split(', ');
+                    const translateY = parseFloat(values[5]) || 0;
+                    if (Math.abs(translateY) < 10) { // Current section is roughly at translateY(0)
+                        currentSection = index;
+                    }
+                }
+            } else if (index === 0) { // Default to first section if no transform
+                currentSection = 0;
+            }
+        });
+        
+        // Map section to camera and scene name
+        switch (currentSection) {
+            case 0:
+                activeCamera = this.cameras.network;
+                sceneName = 'Network';
+                this.currentActiveScene = 'network';
+                break;
+            case 1:
+                activeCamera = this.cameras.blend;
+                sceneName = 'Blend Optimum';
+                this.currentActiveScene = 'blend';
+                break;
+            case 2:
+                activeCamera = this.cameras.artistic;
+                sceneName = 'Mr Scribbles';
+                this.currentActiveScene = 'artistic';
+                break;
+            default:
+                activeCamera = this.cameras.network;
+                sceneName = 'Network';
+                this.currentActiveScene = 'network';
+        }
+        
+        if (activeCamera) {
+            // Update position
+            document.getElementById('cam-x').textContent = activeCamera.position.x.toFixed(2);
+            document.getElementById('cam-y').textContent = activeCamera.position.y.toFixed(2);
+            document.getElementById('cam-z').textContent = activeCamera.position.z.toFixed(2);
+            
+            // Update rotation (convert from radians to degrees)
+            document.getElementById('rot-x').textContent = (activeCamera.rotation.x * 180 / Math.PI).toFixed(1) + '°';
+            document.getElementById('rot-y').textContent = (activeCamera.rotation.y * 180 / Math.PI).toFixed(1) + '°';
+            document.getElementById('rot-z').textContent = (activeCamera.rotation.z * 180 / Math.PI).toFixed(1) + '°';
+            
+            // Update scene name
+            document.getElementById('scene-name').textContent = sceneName;
+        }
     }
 }
 

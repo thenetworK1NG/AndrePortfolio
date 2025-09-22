@@ -49,17 +49,7 @@ body {
     pointer-events: none;
 }
 
-/* Enable mouse interaction for blend and artistic canvases */
-#canvas2 {
-    pointer-events: auto;
-    cursor: grab;
-    z-index: 1; /* Same level as section, behind content */
-}
-
-#canvas2:active {
-    cursor: grabbing;
-}
-
+/* Enable mouse interaction for the artistic canvas */
 #canvas3 {
     pointer-events: auto;
     cursor: grab;
@@ -103,6 +93,56 @@ body {
     transform: translateY(100%);
     z-index: 2;
     color: white;
+}
+
+/* Frosted glass content styling for Blend Optimum section */
+.section-2 .content {
+    pointer-events: none; /* Allow events to pass through to canvas */
+    position: absolute; /* Changed from relative to absolute */
+    top: 2rem; /* Position at top */
+    left: 2rem; /* Position at left (opposite side from Mr Scribbles) */
+    z-index: 2; /* Above canvas for visibility */
+    max-width: 350px; /* Smaller width for corner placement */
+    text-align: left; /* Left-align text */
+    padding: 1.5rem; /* Adjusted padding */
+    background: rgba(0, 0, 0, 0.1); /* Subtle background for readability */
+    backdrop-filter: blur(5px); /* Glass effect */
+    border-radius: 15px; /* Rounded corners */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border */
+}
+
+/* Re-enable pointer events for interactive elements in Section 2 */
+.section-2 .content h1,
+.section-2 .content p,
+.section-2 .content button {
+    pointer-events: auto; /* These elements remain clickable */
+    position: relative;
+    z-index: 3; /* Ensure buttons are on top */
+}
+
+/* Ensure proper cursor for interactive elements in Section 2 */
+.section-2 .content button {
+    cursor: pointer;
+}
+
+.section-2 .content h1 {
+    cursor: default;
+    font-size: 3.5rem; /* Reduced size for corner placement */
+    margin-bottom: 0.5rem; /* Reduced margin */
+}
+
+.section-2 .content p {
+    cursor: default;
+    font-size: 1rem; /* Slightly smaller */
+    margin-bottom: 1.5rem; /* Reduced margin */
+    opacity: 0.9;
+    line-height: 1.4; /* Better line height for readability */
+}
+
+/* Adjust button for corner layout in Section 2 */
+.section-2 .content .cta-button {
+    padding: 0.8rem 1.5rem; /* Slightly smaller button */
+    font-size: 0.9rem; /* Smaller font */
 }
 
 /* Section 3: Mr $cr!bbl3$ - Artistic Scene */
