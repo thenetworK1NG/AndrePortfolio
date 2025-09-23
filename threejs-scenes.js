@@ -1,4 +1,31 @@
 // Three.js 3D Background Scenes for Portfolio
+// Silence debug console output to avoid cluttering browser console in production
+(function() {
+    if (typeof window !== 'undefined' && window.console) {
+        // Keep a backup so developers can restore if needed
+        if (!window.__consoleBackup) {
+            window.__consoleBackup = {
+                log: window.console.log && window.console.log.bind(window.console),
+                warn: window.console.warn && window.console.warn.bind(window.console),
+                error: window.console.error && window.console.error.bind(window.console),
+                info: window.console.info && window.console.info.bind(window.console),
+                debug: window.console.debug && window.console.debug.bind(window.console),
+                trace: window.console.trace && window.console.trace.bind(window.console)
+            };
+        }
+
+        // Replace console methods with no-ops
+        try {
+            var methods = ['log','warn','error','info','debug','trace'];
+            window.console = window.console || {};
+            methods.forEach(function(m) { window.console[m] = function(){}; });
+        } catch (e) {
+            // If overriding fails, silently ignore to avoid breaking the page
+        }
+    }
+})();
+
+
 class ThreeJSScenes {
     constructor() {
         this.scenes = {};
@@ -29,6 +56,8 @@ class ThreeJSScenes {
         // Camera coordinates display
         this.cameraDisplay = null;
         this.currentActiveScene = 'network'; // Track which scene is currently active
+    // Toggle to show/hide network connection "web"
+    this.showNetworkWeb = false; // set to false to remove the web by default
         
         // Keyframe animation data from viewer.js
         this.keyframes = [
@@ -58,17 +87,93 @@ class ThreeJSScenes {
         this.init();
     }
 
+    // Create small '?' help buttons for each section and a modal for help text
+    createHelpButtons() {
+        const sections = ['section1', 'section2', 'section3'];
+        sections.forEach((id, idx) => {
+            const container = document.getElementById(id);
+            if (!container) return;
+
+            const btn = document.createElement('button');
+            btn.className = 'controls-help-btn';
+            btn.title = 'Controls help';
+            btn.textContent = '?';
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.showControlsHelp(idx);
+            });
+            container.appendChild(btn);
+        });
+
+        // Create modal element
+        const modal = document.createElement('div');
+        modal.id = 'controlsHelpModal';
+        modal.className = 'controls-help-modal hidden';
+        modal.innerHTML = `
+            <div class="controls-help-content">
+                <button class="controls-help-close">×</button>
+                <h3>Controls Help</h3>
+                <div class="controls-help-body"></div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        modal.querySelector('.controls-help-close').addEventListener('click', () => {
+            modal.classList.add('hidden');
+        });
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.classList.add('hidden');
+        });
+    }
+
+    // Show controls help for a given section index (0=network,1=blend,2=artistic)
+    showControlsHelp(sectionIndex) {
+        const modal = document.getElementById('controlsHelpModal');
+        if (!modal) return;
+        const body = modal.querySelector('.controls-help-body');
+
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+
+        const common = isMobile ? `Touch and gesture controls:` : `Mouse & keyboard controls:`;
+        const networkHelp = isMobile ? `Rotate: drag with one finger\nZoom: pinch with two fingers\nPan: two-finger drag\nTap objects to play animations` : `Rotate: drag left mouse\nZoom: scroll wheel\nPan: right-drag or Ctrl+drag\nClick objects to play animations`;
+        const blendHelp = isMobile ? `Rotate particles: drag\nZoom: pinch\nPan: two-finger drag` : `Rotate particles: drag\nZoom: scroll\nPan: right-drag or Ctrl+drag`;
+        const artisticHelp = isMobile ? `Drag to orbit camera\nPinch to zoom\nTap elements to interact` : `Drag to orbit camera\nScroll to zoom\nClick elements to interact`;
+
+        let text = '';
+        switch (sectionIndex) {
+            case 0:
+                text = `${common}\n\n${networkHelp}`;
+                break;
+            case 1:
+                text = `${common}\n\n${blendHelp}`;
+                break;
+            case 2:
+                text = `${common}\n\n${artisticHelp}`;
+                break;
+            default:
+                text = `${common}`;
+        }
+
+        // Fill modal
+        body.textContent = '';
+        text.split('\n').forEach(line => {
+            const p = document.createElement('p');
+            p.textContent = line;
+            body.appendChild(p);
+        });
+
+        modal.classList.remove('hidden');
+    }
+
     init() {
         this.createNetworkScene();
         this.createBlendScene();
         this.createArtisticScene();
         this.startAnimations();
+    // camera coordinates display removed per user request
         
-        // Force create lighting controls immediately
-        this.createLightingControls();
-        
-        // Create camera coordinates display
-        this.createCameraDisplay();
+        // Create per-section help (?) buttons that open controls help (PC vs mobile-aware)
+        this.createHelpButtons();
     }
 
     // Animation helper functions (from viewer.js)
@@ -311,56 +416,209 @@ class ThreeJSScenes {
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setClearColor(0x000000, 1); // Black background
         
-        // Create network nodes
-        const nodeGeometry = new THREE.SphereGeometry(0.05, 8, 8);
-        const nodeMaterial = new THREE.MeshBasicMaterial({ color: 0x667eea });
-        const nodes = [];
-        const connections = [];
-
-        // Create 50 nodes in 3D space
-        for (let i = 0; i < 50; i++) {
-            const node = new THREE.Mesh(nodeGeometry, nodeMaterial.clone());
-            node.position.set(
-                (Math.random() - 0.5) * 10,
-                (Math.random() - 0.5) * 6,
-                (Math.random() - 0.5) * 8
-            );
-            
-            // Random color variations
-            node.material.color.setHSL(
-                0.6 + Math.random() * 0.2, // Blue-purple range
-                0.7,
-                0.5 + Math.random() * 0.3
-            );
-            
-            scene.add(node);
-            nodes.push(node);
-        }
-
-        // Create connections between nearby nodes
-        const lineGeometry = new THREE.BufferGeometry();
-        const lineMaterial = new THREE.LineBasicMaterial({ 
-            color: 0x764ba2, 
-            transparent: true, 
-            opacity: 0.3 
-        });
-
-        for (let i = 0; i < nodes.length; i++) {
-            for (let j = i + 1; j < nodes.length; j++) {
-                const distance = nodes[i].position.distanceTo(nodes[j].position);
-                if (distance < 2.5) {
-                    const points = [nodes[i].position, nodes[j].position];
-                    const geometry = new THREE.BufferGeometry().setFromPoints(points);
-                    const line = new THREE.Line(geometry, lineMaterial.clone());
-                    scene.add(line);
-                    connections.push(line);
-                }
-            }
-        }
+        // Removed procedural network nodes and connection "web" - scene will only show the user's model
 
         camera.position.z = 5;
+        // Basic lighting so imported GLB is visible
+        const ambient = new THREE.AmbientLight(0xffffff, 0.9);
+        scene.add(ambient);
+        const directional = new THREE.DirectionalLight(0xffffff, 0.8);
+        directional.position.set(5, 5, 5);
+        scene.add(directional);
 
-        this.scenes.network = { scene, camera, renderer, nodes, connections };
+        // Ensure canvas accepts pointer events so the model can be interacted with
+        canvas.style.pointerEvents = 'auto';
+        canvas.style.cursor = 'grab';
+
+        // Create OrbitControls for the network scene so the user can rotate/pan/zoom the model
+        const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const controls = new THREE.OrbitControls(camera, canvas);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.enableRotate = true;
+        controls.enableZoom = true;
+        // Enable pan for both, ensure on mobile it's enabled by default as requested
+        controls.enablePan = true;
+        controls.rotateSpeed = isMobile ? 0.8 : 1.0;
+        controls.zoomSpeed = isMobile ? 1.2 : 1.0;
+        controls.panSpeed = isMobile ? 1.2 : 1.0;
+        controls.screenSpacePanning = isMobile ? true : false; // better pan behavior on mobile
+        controls.minDistance = 0.5;
+        controls.maxDistance = 150;
+        controls.maxPolarAngle = Math.PI; // allow full vertical rotation
+        controls.autoRotate = false;
+        controls.target.set(0, 0, 0);
+        controls.update();
+
+        // Basic cursor feedback
+        canvas.addEventListener('mousedown', () => { canvas.style.cursor = 'grabbing'; this.userInteracting = true; });
+        canvas.addEventListener('mouseup', () => { canvas.style.cursor = 'grab'; this.userInteracting = false; });
+
+        // Attempt to load the networking GLB model (placed in /networking/networking.glb)
+        try {
+            if (typeof THREE.GLTFLoader !== 'undefined') {
+                const loader = new THREE.GLTFLoader();
+                loader.load('networking/networking.glb', (gltf) => {
+                    const netModel = gltf.scene || gltf.scenes && gltf.scenes[0];
+                    if (!netModel) return;
+
+                    // Center and scale the model to fit the scene bounds if needed
+                    netModel.position.set(0, 0, 0);
+                    // Adjust scale if the model appears too large/small
+                    netModel.scale.set(1, 1, 1);
+                    scene.add(netModel);
+                    this.networkModel = netModel;
+                    // Update controls target and refresh
+                    controls.target.set(0, 0, 0);
+                    controls.update();
+
+                    // Setup animation mixer and actions map for the networking model if animations exist
+                    let networkMixer = null;
+                    const networkActions = new Map();
+                    const actionStates = new Map(); // track whether each clip is at its end (true) or start (false)
+                    if (gltf.animations && gltf.animations.length) {
+                        networkMixer = new THREE.AnimationMixer(netModel);
+                        gltf.animations.forEach((clip) => {
+                            const action = networkMixer.clipAction(clip);
+                            // Prepare actions for later playback
+                            action.clampWhenFinished = true;
+                            action.setLoop(THREE.LoopOnce, 1);
+                            networkActions.set(clip.name, action);
+                            actionStates.set(clip.name, false); // initially at start
+                            console.log(`Registered network clip: ${clip.name}`);
+                        });
+
+                        // Listen for finished events to update action state (end or start)
+                        networkMixer.addEventListener('finished', (e) => {
+                            try {
+                                const clipName = e.action._clip ? e.action._clip.name : undefined;
+                                if (clipName) {
+                                    // If action was playing forward (positive timeScale) it finished at end -> true
+                                    const finishedAtEnd = (e.action.timeScale || 1) > 0;
+                                    this.scenes.network = this.scenes.network || {};
+                                    this.scenes.network.actionStates = this.scenes.network.actionStates || new Map();
+                                    this.scenes.network.actionStates.set(clipName, finishedAtEnd);
+                                    console.log(`Action '${clipName}' finished. atEnd=${finishedAtEnd}`);
+                                }
+                            } catch (err) {
+                                console.warn('Error handling mixer finished event', err);
+                            }
+                        });
+
+                        // store mixer/actions on the scene for updating in the animation loop
+                        this.scenes.network = this.scenes.network || {};
+                        this.scenes.network.networkMixer = networkMixer;
+                        this.scenes.network.networkActions = networkActions;
+                        this.scenes.network.actionStates = actionStates;
+                    }
+
+                    // Click-to-play mapping: when object named 'key1' is clicked, play both 'key1' and 'key2' clips simultaneously
+                    // Edit this map to change which clips are played for each clickable object name
+                    const clickAnimMap = {
+                        'key1': ['key1', 'key2'],
+                        'screen1': ['screen1', 'screen2'],
+                        'screen2': ['screen1', 'screen2']
+                    };
+
+                    // Raycaster-based click handler to play mapped animations and freeze on last keyframe
+                    const raycaster = new THREE.Raycaster();
+                    const mouse = new THREE.Vector2();
+
+                    // Shared pointer handler (mouse click or touch) to handle tap/click and play animations
+                    const handlePointerPlay = (clientX, clientY) => {
+                        const rect = canvas.getBoundingClientRect();
+                        mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+                        mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+                        raycaster.setFromCamera(mouse, camera);
+                        const intersects = raycaster.intersectObjects(netModel.children, true);
+                        if (intersects.length === 0) return;
+
+                        let picked = intersects[0].object;
+                        let foundName = null;
+                        while (picked) {
+                            if (picked.name && picked.name !== '') {
+                                foundName = picked.name;
+                                break;
+                            }
+                            picked = picked.parent;
+                        }
+
+                        if (!foundName) return;
+
+                        const animList = clickAnimMap[foundName];
+                        if (!animList || animList.length === 0) {
+                            console.log(`No animations mapped for clicked object: ${foundName}`);
+                            return;
+                        }
+
+                        if (!networkMixer || !networkActions) {
+                            console.warn('No animation mixer/actions available for network model');
+                            return;
+                        }
+
+                        const states = this.scenes.network?.actionStates || new Map();
+                        const allAtEnd = animList.every(name => states.get(name) === true);
+                        const playReverse = allAtEnd === true;
+
+                        const actionsToPlay = [];
+                        animList.forEach((clipName) => {
+                            const action = networkActions.get(clipName);
+                            if (!action) {
+                                console.warn(`Animation clip not found on network model: ${clipName}`);
+                                return;
+                            }
+                            actionsToPlay.push({ name: clipName, action });
+                        });
+
+                        actionsToPlay.forEach(({ name, action }) => {
+                            try {
+                                action.reset();
+                                action.enabled = true;
+                                action.setLoop(THREE.LoopOnce, 1);
+                                action.clampWhenFinished = true;
+                                action.weight = 1.0;
+                                if (playReverse) {
+                                    action.time = action._clip ? action._clip.duration : 0;
+                                    action.timeScale = -1;
+                                } else {
+                                    action.time = 0;
+                                    action.timeScale = 1;
+                                }
+                                action.play();
+                                this.scenes.network.actionStates.set(name, !playReverse);
+                            } catch (e) {
+                                console.error('Error playing action:', e);
+                            }
+                        });
+                        if (actionsToPlay.length > 0) {
+                            console.log(`Playing animations [${actionsToPlay.map(a => a.name).join(', ')}] for clicked object '${foundName}' (${playReverse ? 'reverse' : 'forward'})`);
+                        }
+                    };
+
+                    canvas.addEventListener('click', (evt) => {
+                        handlePointerPlay(evt.clientX, evt.clientY);
+                    });
+
+                    // Touch support: handle tap on mobile devices
+                    canvas.addEventListener('touchend', (evt) => {
+                        if (!evt.changedTouches || evt.changedTouches.length === 0) return;
+                        const touch = evt.changedTouches[0];
+                        handlePointerPlay(touch.clientX, touch.clientY);
+                    }, { passive: true });
+                    console.log('✅ Loaded networking/networking.glb into network scene');
+                }, undefined, (err) => {
+                    console.warn('⚠️ Failed to load networking.glb:', err);
+                });
+            } else {
+                console.warn('GLTFLoader not available on THREE namespace - ensure GLTFLoader script is included');
+            }
+        } catch (e) {
+            console.error('Error while loading networking model:', e);
+        }
+
+        // Store scene including controls so animateNetwork can update them
+        this.scenes.network = { scene, camera, renderer, controls };
         this.renderers.network = renderer;
         this.cameras.network = camera;
     }
@@ -561,12 +819,12 @@ class ThreeJSScenes {
         // Set the target for OrbitControls (camera is looking towards origin)
         camera.lookAt(0, 0, 0);
 
-        // Add OrbitControls for mouse interaction
-        const controls = new THREE.OrbitControls(camera, canvas);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.enableZoom = true;
-        controls.enablePan = false; // Disable panning to keep focus on model
+    // Add OrbitControls for mouse interaction
+    const controls = new THREE.OrbitControls(camera, canvas);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.enableZoom = true;
+    controls.enablePan = true; // Enable panning by default
         controls.minDistance = 1.5;
         controls.maxDistance = 100; // Increased from 50 to 100 for more zoom out
         controls.maxPolarAngle = Math.PI * 0.75; // Limit vertical rotation
@@ -1107,12 +1365,12 @@ class ThreeJSScenes {
         camera.position.set(0, 1, 6);
         camera.lookAt(0, 0, 0);
 
-        // Add OrbitControls for mouse interaction
-        const controls = new THREE.OrbitControls(camera, canvas);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.enableZoom = true;
-        controls.enablePan = false; // Disable panning to keep focus on model
+    // Add OrbitControls for mouse interaction
+    const controls = new THREE.OrbitControls(camera, canvas);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.enableZoom = true;
+    controls.enablePan = true; // Enable panning by default
         controls.minDistance = 3;
         controls.maxDistance = 10;
         controls.maxPolarAngle = Math.PI * 0.75; // Limit vertical rotation
@@ -1178,22 +1436,17 @@ class ThreeJSScenes {
     // Animation functions
     animateNetwork() {
         if (!this.scenes.network) return;
-        
-        const { scene, camera, renderer, nodes, connections } = this.scenes.network;
-        
-        // Animate nodes
-        nodes.forEach((node, index) => {
-            node.rotation.y += 0.01;
-            node.position.y += Math.sin(Date.now() * 0.001 + index) * 0.001;
-            
-            // Pulse effect
-            const scale = 1 + Math.sin(Date.now() * 0.002 + index) * 0.2;
-            node.scale.setScalar(scale);
-        });
+    const { scene, camera, renderer, controls } = this.scenes.network;
 
-        // Rotate camera
-        camera.position.x = Math.sin(Date.now() * 0.0005) * 2;
-        camera.lookAt(0, 0, 0);
+        // Update controls (damping, user interaction)
+        if (controls) controls.update();
+
+        // Advance network animation mixer if present
+        const networkMixer = this.scenes.network?.networkMixer;
+        if (networkMixer) {
+            const delta = this.artisticClock.getDelta();
+            networkMixer.update(delta);
+        }
 
         renderer.render(scene, camera);
         
@@ -1513,7 +1766,7 @@ class ThreeJSScenes {
             directionalLight.intensity = value;
         });
         
-        setupSlider('directional2-slider', 'directional2-value', 'directional2Intensity', null, (value) => {
+        setupSlider('directional2-slider', 'directional2Intensity', null, (value) => {
             directionalLight2.intensity = value;
         });
         
@@ -1589,360 +1842,20 @@ class ThreeJSScenes {
     }
     
     createLightingControls() {
-        // Create immediate lighting controls - no waiting for scene creation
-        const controlPanel = document.createElement('div');
-        controlPanel.id = 'lighting-controls';
-        controlPanel.style.cssText = `
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            font-family: Arial, sans-serif;
-            font-size: 14px;
-            z-index: 9999;
-            width: 280px;
-            border: 2px solid #ff006e;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        `;
-        
-        controlPanel.innerHTML = `
-            <h3 style="margin-top: 0; color: #ff006e; text-align: center;">🎨 LIGHTING CONTROLS</h3>
-            
-            <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px;">🌟 Ambient Light: <span id="ambient-val" style="color: #ff006e;">3.0</span></label>
-                <input type="range" id="ambient-ctrl" min="0" max="5" step="0.1" value="3.0" style="width: 100%; height: 8px;">
-            </div>
-            
-            <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px;">☀️ Main Light: <span id="main-val" style="color: #ff006e;">3.0</span></label>
-                <input type="range" id="main-ctrl" min="0" max="5" step="0.1" value="3.0" style="width: 100%; height: 8px;">
-            </div>
-            
-            <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px;">💡 Fill Light: <span id="fill-val" style="color: #ff006e;">2.0</span></label>
-                <input type="range" id="fill-ctrl" min="0" max="5" step="0.1" value="2.0" style="width: 100%; height: 8px;">
-            </div>
-            
-            <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px;">🔥 Accent Light: <span id="accent-val" style="color: #ff006e;">2.0</span></label>
-                <input type="range" id="accent-ctrl" min="0" max="5" step="0.1" value="2.0" style="width: 100%; height: 8px;">
-            </div>
-            
-            <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px;">📸 Exposure: <span id="exposure-val" style="color: #ff006e;">2.0</span></label>
-                <input type="range" id="exposure-ctrl" min="0" max="3" step="0.1" value="2.0" style="width: 100%; height: 8px;">
-            </div>
-            
-            <div style="margin-bottom: 20px; text-align: center;">
-                <button id="bright-btn" style="margin: 5px; padding: 8px 12px; background: #ff006e; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">🔥 BRIGHT</button>
-                <button id="dramatic-btn" style="margin: 5px; padding: 8px 12px; background: #fb5607; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">🎭 DRAMATIC</button>
-                <button id="soft-btn" style="margin: 5px; padding: 8px 12px; background: #666; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">😎 SOFT</button>
-            </div>
-            
-            <div style="text-align: center;">
-                <button id="close-btn" style="padding: 8px 15px; background: #333; color: white; border: none; border-radius: 5px; cursor: pointer;">❌ Close</button>
-            </div>
-        `;
-        
-        document.body.appendChild(controlPanel);
-        
-        // Add event listeners that work immediately
-        const updateValue = (controllerId, valueId, callback) => {
-            const control = document.getElementById(controllerId);
-            const valueSpan = document.getElementById(valueId);
-            
-            control.addEventListener('input', (e) => {
-                const value = parseFloat(e.target.value);
-                valueSpan.textContent = value.toFixed(1);
-                callback(value);
-            });
-        };
-        
-        updateValue('ambient-ctrl', 'ambient-val', (value) => {
-            if (this.scenes.blend && this.scenes.blend.scene) {
-                const ambientLight = this.scenes.blend.scene.children.find(child => child.type === 'AmbientLight');
-                if (ambientLight) ambientLight.intensity = value;
-            }
-        });
-        
-        updateValue('main-ctrl', 'main-val', (value) => {
-            if (this.scenes.blend && this.scenes.blend.scene) {
-                const directionalLight = this.scenes.blend.scene.children.find(child => child.type === 'DirectionalLight');
-                if (directionalLight) directionalLight.intensity = value;
-            }
-        });
-        
-        updateValue('fill-ctrl', 'fill-val', (value) => {
-            if (this.scenes.blend && this.scenes.blend.scene) {
-                const directionalLights = this.scenes.blend.scene.children.filter(child => child.type === 'DirectionalLight');
-                if (directionalLights[1]) directionalLights[1].intensity = value;
-            }
-        });
-        
-        updateValue('accent-ctrl', 'accent-val', (value) => {
-            if (this.scenes.blend && this.scenes.blend.scene) {
-                const pointLight = this.scenes.blend.scene.children.find(child => child.type === 'PointLight');
-                if (pointLight) pointLight.intensity = value;
-            }
-        });
-        
-        updateValue('exposure-ctrl', 'exposure-val', (value) => {
-            if (this.scenes.blend && this.scenes.blend.renderer) {
-                this.scenes.blend.renderer.toneMappingExposure = value;
-            }
-        });
-        
-        // Preset buttons
-        document.getElementById('bright-btn').addEventListener('click', () => {
-            document.getElementById('ambient-ctrl').value = 3.0;
-            document.getElementById('main-ctrl').value = 3.0;
-            document.getElementById('fill-ctrl').value = 2.0;
-            document.getElementById('accent-ctrl').value = 2.0;
-            document.getElementById('exposure-ctrl').value = 2.0;
-            
-            // Trigger change events
-            ['ambient-ctrl', 'main-ctrl', 'fill-ctrl', 'accent-ctrl', 'exposure-ctrl'].forEach(id => {
-                document.getElementById(id).dispatchEvent(new Event('input'));
-            });
-        });
-        
-        document.getElementById('dramatic-btn').addEventListener('click', () => {
-            document.getElementById('ambient-ctrl').value = 0.5;
-            document.getElementById('main-ctrl').value = 2.5;
-            document.getElementById('fill-ctrl').value = 0.3;
-            document.getElementById('accent-ctrl').value = 2.0;
-            document.getElementById('exposure-ctrl').value = 1.5;
-            
-            // Trigger change events
-            ['ambient-ctrl', 'main-ctrl', 'fill-ctrl', 'accent-ctrl', 'exposure-ctrl'].forEach(id => {
-                document.getElementById(id).dispatchEvent(new Event('input'));
-            });
-        });
-        
-        document.getElementById('soft-btn').addEventListener('click', () => {
-            document.getElementById('ambient-ctrl').value = 2.5;
-            document.getElementById('main-ctrl').value = 1.5;
-            document.getElementById('fill-ctrl').value = 1.5;
-            document.getElementById('accent-ctrl').value = 1.0;
-            document.getElementById('exposure-ctrl').value = 1.2;
-            
-            // Trigger change events
-            ['ambient-ctrl', 'main-ctrl', 'fill-ctrl', 'accent-ctrl', 'exposure-ctrl'].forEach(id => {
-                document.getElementById(id).dispatchEvent(new Event('input'));
-            });
-        });
-        
-        document.getElementById('close-btn').addEventListener('click', () => {
-            controlPanel.remove();
-        });
-        
-        console.log('🎨 LIGHTING CONTROLS CREATED AND VISIBLE!');
+        // Settings UI removed per user request. Defaults are already applied elsewhere in the code.
+        return null;
     }
-    
-    // Create camera coordinates display
+
+    // Pan limit and other settings UIs removed per user request. Defaults remain in code.
+
+    // Camera coordinates display removed per user request - stub left in place
     createCameraDisplay() {
-        const cameraPanel = document.createElement('div');
-        cameraPanel.id = 'camera-coordinates';
-        cameraPanel.style.cssText = `
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            color: #00ff88;
-            padding: 10px 15px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 11px;
-            z-index: 9998;
-            border: 1px solid #00ff88;
-            box-shadow: 0 2px 10px rgba(0, 255, 136, 0.2);
-            min-width: 200px;
-            backdrop-filter: blur(5px);
-        `;
-        
-        cameraPanel.innerHTML = `
-            <div style="color: #00ff88; font-weight: bold; margin-bottom: 5px; text-align: center;">📷 CAMERA COORDS</div>
-            <div style="font-size: 10px; margin-bottom: 3px;">Scene: <span id="scene-name" style="color: #ffff00;">Network</span></div>
-            <div style="font-size: 10px;">Position:</div>
-            <div style="margin-left: 10px;">
-                X: <span id="cam-x" style="color: #ff6b6b;">0.00</span><br>
-                Y: <span id="cam-y" style="color: #4ecdc4;">0.00</span><br>
-                Z: <span id="cam-z" style="color: #45b7d1;">0.00</span>
-            </div>
-            <div style="font-size: 10px; margin-top: 5px;">Rotation:</div>
-            <div style="margin-left: 10px;">
-                X: <span id="rot-x" style="color: #ff6b6b;">0.00</span><br>
-                Y: <span id="rot-y" style="color: #4ecdc4;">0.00</span><br>
-                Z: <span id="rot-z" style="color: #45b7d1;">0.00</span>
-            </div>
-            <div style="font-size: 10px; margin-top: 5px; margin-bottom: 3px;">Controls:</div>
-            <button id="toggle-panning" style="
-                margin-bottom: 5px;
-                padding: 3px 8px;
-                background: transparent;
-                color: #ff6b6b;
-                border: 1px solid #ff6b6b;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 9px;
-                width: 100%;
-            ">🚫 PANNING OFF</button>
-            <button id="toggle-camera-display" style="
-                margin-top: 3px;
-                padding: 3px 8px;
-                background: transparent;
-                color: #00ff88;
-                border: 1px solid #00ff88;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 9px;
-                width: 100%;
-            ">MINIMIZE</button>
-        `;
-        
-        document.body.appendChild(cameraPanel);
-        this.cameraDisplay = cameraPanel;
-        
-        // Add toggle functionality
-        document.getElementById('toggle-camera-display').addEventListener('click', () => {
-            const button = document.getElementById('toggle-camera-display');
-            const content = cameraPanel.children;
-            
-            if (button.textContent === 'MINIMIZE') {
-                // Hide all content except title and buttons
-                for (let i = 1; i < content.length - 2; i++) {
-                    content[i].style.display = 'none';
-                }
-                button.textContent = 'EXPAND';
-                cameraPanel.style.minWidth = '120px';
-            } else {
-                // Show all content
-                for (let i = 1; i < content.length - 2; i++) {
-                    content[i].style.display = 'block';
-                }
-                button.textContent = 'MINIMIZE';
-                cameraPanel.style.minWidth = '200px';
-            }
-        });
-        
-        // Add panning toggle functionality
-        document.getElementById('toggle-panning').addEventListener('click', () => {
-            const button = document.getElementById('toggle-panning');
-            
-            // Get the current active scene controls
-            let activeControls = null;
-            switch (this.currentActiveScene) {
-                case 'network':
-                    // Network scene doesn't have OrbitControls
-                    button.textContent = '❌ NO CONTROLS';
-                    button.style.color = '#666';
-                    button.style.borderColor = '#666';
-                    setTimeout(() => {
-                        button.textContent = '🚫 PANNING OFF';
-                        button.style.color = '#ff6b6b';
-                        button.style.borderColor = '#ff6b6b';
-                    }, 1000);
-                    return;
-                    
-                case 'blend':
-                    activeControls = this.scenes.blend?.controls;
-                    break;
-                    
-                case 'artistic':
-                    activeControls = this.scenes.artistic?.controls;
-                    break;
-            }
-            
-            if (activeControls) {
-                if (activeControls.enablePan) {
-                    // Disable panning
-                    activeControls.enablePan = false;
-                    button.textContent = '🚫 PANNING OFF';
-                    button.style.color = '#ff6b6b';
-                    button.style.borderColor = '#ff6b6b';
-                } else {
-                    // Enable panning
-                    activeControls.enablePan = true;
-                    button.textContent = '✅ PANNING ON';
-                    button.style.color = '#4ecdc4';
-                    button.style.borderColor = '#4ecdc4';
-                }
-                console.log(`📷 Panning ${activeControls.enablePan ? 'enabled' : 'disabled'} for ${this.currentActiveScene} scene`);
-            }
-        });
-        
-        console.log('📷 Camera coordinates display created!');
+        this.cameraDisplay = null;
+        return null;
     }
     
-    // Update camera coordinates display
-    updateCameraDisplay() {
-        if (!this.cameraDisplay) return;
-        
-        // Determine active scene based on current section
-        let activeCamera = null;
-        let sceneName = 'Unknown';
-        
-        // Get current section from DOM or use tracked value
-        const sections = document.querySelectorAll('.section');
-        let currentSection = null;
-        
-        sections.forEach((section, index) => {
-            const transform = getComputedStyle(section).transform;
-            if (transform && transform !== 'none') {
-                const matrix = transform.match(/matrix.*\((.+)\)/);
-                if (matrix) {
-                    const values = matrix[1].split(', ');
-                    const translateY = parseFloat(values[5]) || 0;
-                    if (Math.abs(translateY) < 10) { // Current section is roughly at translateY(0)
-                        currentSection = index;
-                    }
-                }
-            } else if (index === 0) { // Default to first section if no transform
-                currentSection = 0;
-            }
-        });
-        
-        // Map section to camera and scene name
-        switch (currentSection) {
-            case 0:
-                activeCamera = this.cameras.network;
-                sceneName = 'Network';
-                this.currentActiveScene = 'network';
-                break;
-            case 1:
-                activeCamera = this.cameras.blend;
-                sceneName = 'Blend Optimum';
-                this.currentActiveScene = 'blend';
-                break;
-            case 2:
-                activeCamera = this.cameras.artistic;
-                sceneName = 'Mr Scribbles';
-                this.currentActiveScene = 'artistic';
-                break;
-            default:
-                activeCamera = this.cameras.network;
-                sceneName = 'Network';
-                this.currentActiveScene = 'network';
-        }
-        
-        if (activeCamera) {
-            // Update position
-            document.getElementById('cam-x').textContent = activeCamera.position.x.toFixed(2);
-            document.getElementById('cam-y').textContent = activeCamera.position.y.toFixed(2);
-            document.getElementById('cam-z').textContent = activeCamera.position.z.toFixed(2);
-            
-            // Update rotation (convert from radians to degrees)
-            document.getElementById('rot-x').textContent = (activeCamera.rotation.x * 180 / Math.PI).toFixed(1) + '°';
-            document.getElementById('rot-y').textContent = (activeCamera.rotation.y * 180 / Math.PI).toFixed(1) + '°';
-            document.getElementById('rot-z').textContent = (activeCamera.rotation.z * 180 / Math.PI).toFixed(1) + '°';
-            
-            // Update scene name
-            document.getElementById('scene-name').textContent = sceneName;
-        }
-    }
+    // updateCameraDisplay is now a no-op since the camera coordinates UI was removed
+    updateCameraDisplay() { return; }
 }
 
 // Initialize 3D scenes when page loads

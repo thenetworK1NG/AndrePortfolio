@@ -162,6 +162,29 @@ body {
     line-height: 1.25;
 }
 
+/* Desktop-specific placement: ensure network title/button sit top-right on larger screens */
+@media (min-width: 1024px) {
+    .section-1 .content {
+        top: 2rem;
+        right: 2rem;
+        left: auto;
+        max-width: 420px;
+        text-align: right;
+    }
+}
+
+/* Mobile/tablet: center the panel for smaller screens */
+@media (max-width: 1023px) {
+    .section-1 .content {
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        top: 1.2rem;
+        text-align: center;
+        max-width: calc(100% - 3rem);
+    }
+}
+
 /* Section 2: Blend Optimum - Particle Blend Scene */
 .section-2 {
     transform: translateY(100%);
@@ -396,6 +419,70 @@ body {
 
 .btn-2:hover {
     box-shadow: 0 10px 25px rgba(245, 87, 108, 0.4);
+}
+
+/* Controls help button (small ? in section corners) */
+.controls-help-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.15);
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Modal for controls help */
+.controls-help-modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.45);
+    z-index: 10000;
+}
+
+.controls-help-modal.hidden { display: none; }
+
+.controls-help-content {
+    /* Frosted glass style */
+    background: rgba(255, 255, 255, 0.06);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    color: #fff;
+    padding: 1.25rem 1.5rem;
+    border-radius: 12px;
+    max-width: 420px;
+    width: calc(100% - 3rem);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.controls-help-content h3 { margin-top: 0; }
+.controls-help-content p { margin: 0.25rem 0; line-height: 1.4; color: rgba(255,255,255,0.95); }
+.controls-help-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #fff;
+    font-size: 1.2rem;
+    line-height: 1;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    cursor: pointer;
 }
 
 .btn-3:hover {
